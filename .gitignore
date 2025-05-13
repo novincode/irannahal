@@ -1,0 +1,44 @@
+# ───── Dependencies ─────
+node_modules/
+.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+.turbo
+
+# ───── Testing ─────
+coverage/
+
+# ───── Next.js Build ─────
+**/.next/
+**/out/
+
+# ───── Production Build ─────
+**/build/
+
+# ───── Miscellaneous ─────
+.DS_Store
+*.pem
+
+# ───── Debug Logs ─────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ───── Environment Files ─────
+.env*
+.dev.vars*
+
+# ───── Vercel ─────
+.vercel/
+
+# ───── TypeScript ─────
+*.tsbuildinfo
+next-env.d.ts
+
+# ───── Wrangler ─────
+.wrangler/
