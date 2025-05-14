@@ -1,9 +1,11 @@
 import Image from "next/image";
-import {test} from '@db/test'
+import { Button } from "@shadcn/button";
 export default function Home() {
   return (
     <div>
-      {test}
+      <Button>
+        {process.env.DATABASE_URL}
+      </Button>
     </div>
   );
 }

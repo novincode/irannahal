@@ -15,9 +15,22 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-        "@web/*": ["apps/web/*"],
-      "@ui/*": ["apps/web/components/ui/*"],
-      "@db/*": ["packages/db/*"]
+      "@packages/*": ["packages/*"],
+      "@apps/*": ["apps/*"],
+
+      "@web/*": ["apps/web/*"],
+      "@admin/*": ["apps/admin/*"],
+
+      "@db": ["packages/db/index"],
+      "@db/*": ["packages/db/*"],
+
+      "@auth": ["packages/auth/index"],
+      "@auth/*": ["packages/auth/*"],
+
+      "@ui/*": ["packages/ui/*"],
+      "@shadcn/*": ["packages/ui/components/ui/*"],
+
+   
     }
   }
 }

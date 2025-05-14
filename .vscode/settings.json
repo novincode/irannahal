@@ -1,0 +1,17 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/.wrangler": true,
+        ".wrangler": true,
+        "**/.next": true,
+        ".next": true,
+        "**/node_modules": true,
+        "**/.vscode": true,
+        "**/.turbo": true
+    },
+    "explorerExclude.backup": {}
+}

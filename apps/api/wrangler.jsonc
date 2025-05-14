@@ -4,8 +4,8 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "nextkala-web",
-	"compatibility_date": "2025-05-10",
+	"name": "nextkala-api",
+	"compatibility_date": "2025-05-14",
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
