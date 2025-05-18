@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Globe } from 'lucide-react';
 import { auth } from '@packages/auth';
 import Link from 'next/link';
-import AvatarMenu from '../shared/AvatarMenu';
+import AdminBarDropdown from './AdminBarDropdown';
 
 interface AdminBarProps extends CommonProps {
     isInPanel?: boolean
@@ -41,7 +41,7 @@ const AdminBar = async ({ isInPanel, ...props }: AdminBarProps) => {
             }
 
             <div>
-                <AvatarMenu  />
+                <AdminBarDropdown admin_url={process.env.ADMIN_URL || "/admin"} />
             </div>
         </div>
     )

@@ -13,7 +13,7 @@ import {
   SidebarMenuSubItem,
 } from "@shadcn/sidebar"
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@shadcn/collapsible"
-import { LayoutDashboard, Users, Settings, ShoppingCart, Package, CreditCard, BarChart2, ChevronDown } from "lucide-react"
+import { LayoutDashboard, Users, Settings, ShoppingCart, Package, CreditCard, BarChart2, ChevronDown, LogOut } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 
@@ -61,7 +61,7 @@ const parentButtonClass = "font-semibold text-base h-auto"
 
 const AdminSidebar = () => {
   return (
-    <Sidebar className="sticky h-full">
+    <Sidebar className="top-[var(--topbar-height)] h-auto"  collapsible="icon">
       <SidebarContent className="">
         <SidebarGroup>
           <SidebarGroupLabel>مدیریت فروشگاه</SidebarGroupLabel>
@@ -73,7 +73,7 @@ const AdminSidebar = () => {
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton className={parentButtonClass}>
-                          <item.icon className="w-4 h-4 mr-2" />
+                          <item.icon className="w-4 h-4 " />
                           {item.title}
                           <ChevronDown className="w-4 h-4 mr-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
                         </SidebarMenuButton>
@@ -85,7 +85,7 @@ const AdminSidebar = () => {
                               <SidebarMenuButton asChild>
 
                                 <Link href={`/${sub.url}`} className="flex items-center">
-                                  <sub.icon className="w-4 h-4 mr-2" />
+                                  <sub.icon className="w-4 h-4 " />
                                   {sub.title}
                                 </Link>
                               </SidebarMenuButton>
@@ -99,7 +99,7 @@ const AdminSidebar = () => {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild className={parentButtonClass}>
                       <Link href={`/${item.url}`} className="flex items-center">
-                        <item.icon className="w-4 h-4 mr-2" />
+                        <item.icon className="w-4 h-4 " />
                         {item.title}
                       </Link>
                     </SidebarMenuButton>
@@ -116,7 +116,7 @@ const AdminSidebar = () => {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton className="text-red-600 font-semibold text-base h-auto flex items-center cursor-pointer" onClick={() => signOut()}> 
-                  <Settings className="w-4 h-4 mr-2" />
+                  <LogOut className="w-4 h-4 " />
                   خروج
                 </SidebarMenuButton>
               </SidebarMenuItem>
