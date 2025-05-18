@@ -8,6 +8,26 @@ import { Button } from "@shadcn/button"
 
 export default function ThemeSwitch() {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon_lg"
+        aria-label="Toggle theme"
+        className="p-2"
+        disabled
+      >
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    )
+  }
+
   const isDark = theme === "dark"
 
   return (

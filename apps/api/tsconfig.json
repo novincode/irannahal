@@ -2,18 +2,21 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "plugins": [
-      { "name": "next" }
+      {
+        "name": "next"
+      }
     ],
     "incremental": true,
-    "module": "NodeNext"
+    "strict": true,
   },
   "include": [
-    "next-env.d.ts",
+    "env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    ".next/types/**/*.ts",
+    "types/*.d.ts",
+    "@ui/components/**/*.{ts,tsx}",
+    "postcss.config.mjs",
     ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
   ]
 }

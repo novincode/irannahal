@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2021",
-    "lib": ["DOM", "DOM.Iterable", "ES2021"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2021"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -15,22 +19,60 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@packages/*": ["packages/*"],
-      "@apps/*": ["apps/*"],
-
-      "@web/*": ["apps/web/*"],
-      "@admin/*": ["apps/admin/*"],
-
-      "@db": ["packages/db/index"],
-      "@db/*": ["packages/db/*"],
-
-      "@auth": ["packages/auth/index"],
-      "@auth/*": ["packages/auth/*"],
-
-      "@ui/*": ["packages/ui/*"],
-      "@shadcn/*": ["packages/ui/components/ui/*"],
-
-   
+      "@packages/*": [
+        "packages/*"
+      ],
+      "@apps/*": [
+        "apps/*"
+      ],
+      "@web/*": [
+        "apps/web/*"
+      ],
+      "@admin/*": [
+        "apps/admin/*"
+      ],
+      "@configs/*": [
+        "packages/configs/*"
+      ],
+      "@actions/*": [
+        "packages/actions/*"
+      ],
+      "@db": [
+        "packages/db/index"
+      ],
+      "@db/*": [
+        "packages/db/*"
+      ],
+      "@auth": [
+        "packages/auth/index"
+      ],
+      "@auth/*": [
+        "packages/auth/*"
+      ],
+      "@ui/*": [
+        "packages/ui/*"
+      ],
+      "@shadcn/*": [
+        "packages/ui/components/ui/*"
+      ],
     }
-  }
+  },
+  "include": [
+    "env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "types/*.d.ts",
+    "@ui/components/**/*.{ts,tsx}",
+    "postcss.config.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    ".wrangler",
+    ".vercel",
+    "**/.cache",
+    "**/.git",
+    "**/dist"
+  ]
 }

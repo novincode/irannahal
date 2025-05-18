@@ -3,9 +3,15 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    path.join(__dirname, "apps/web/app/**/*.{js,ts,jsx,tsx}"),
-    path.join(__dirname, "packages/ui/**/*.{ts,tsx}"),
+    "./apps/web/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./apps/web/app/**/*.{js,ts,jsx,tsx,mdx}",
+
+    "./apps/admin/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./apps/admin/app/**/*.{js,ts,jsx,tsx,mdx}",
+
+    "./packages/ui/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+
   theme: {
     extend: {},
   },
