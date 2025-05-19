@@ -15,7 +15,10 @@ const AdminMain = ({ children }: { children: ReactNode }) => {
                         <PanelLeftIcon className="w-5 h-5" />
                     </SidebarTrigger>
                 </div>
-                {children}
+                <div className='flex-auto flex flex-col p-4'>
+                    {children}
+
+                </div>
             </div>
         </SidebarProvider>
     )

@@ -1,114 +1,200 @@
 import {
-    boolean,
-    timestamp,
-    pgTable,
-    text,
-    primaryKey,
-    integer,
-    pgEnum,
-  } from "drizzle-orm/pg-core"
-  import type { AdapterAccountType } from "next-auth/adapters"
-   
-  // Define role values in one place
-  export const USER_ROLE_VALUES = [
-    "admin",
-    "user",
-    "author",
-    "customer",
-  ] as const
-   
-  // Use the array to create the TypeScript enum
-  export type UserRoleType = typeof USER_ROLE_VALUES[number]
-  export enum UserRole {
-    ADMIN = "admin",
-    USER = "user",
-    AUTHOR = "author",
-    CUSTOMER = "customer",
-  }
-   
-  // Use the same array for the PostgreSQL enum
-  export const userRoleEnum = pgEnum("user_role", USER_ROLE_VALUES)
-   
-  export const users = pgTable("user", {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    name: text("name"),
-    email: text("email").unique(),
-    emailVerified: timestamp("emailVerified", { mode: "date" }),
-    image: text("image"),
-    role: userRoleEnum("role").notNull().default("user"),
-  })
-   
-  export const accounts = pgTable(
-    "account",
-    {
-      userId: text("userId")
-        .notNull()
-        .references(() => users.id, { onDelete: "cascade" }),
-      type: text("type").$type<AdapterAccountType>().notNull(),
-      provider: text("provider").notNull(),
-      providerAccountId: text("providerAccountId").notNull(),
-      refresh_token: text("refresh_token"),
-      access_token: text("access_token"),
-      expires_at: integer("expires_at"),
-      token_type: text("token_type"),
-      scope: text("scope"),
-      id_token: text("id_token"),
-      session_state: text("session_state"),
-    },
-    (account) => [
-      {
-        compoundKey: primaryKey({
-          columns: [account.provider, account.providerAccountId],
-        }),
-      },
-    ]
-  )
-   
-  export const sessions = pgTable("session", {
-    sessionToken: text("sessionToken").primaryKey(),
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
-  })
-   
-  export const verificationTokens = pgTable(
-    "verificationToken",
-    {
-      identifier: text("identifier").notNull(),
-      token: text("token").notNull(),
-      expires: timestamp("expires", { mode: "date" }).notNull(),
-    },
-    (verificationToken) => [
-      {
-        compositePk: primaryKey({
-          columns: [verificationToken.identifier, verificationToken.token],
-        }),
-      },
-    ]
-  )
-   
-  export const authenticators = pgTable(
-    "authenticator",
-    {
-      credentialID: text("credentialID").notNull().unique(),
-      userId: text("userId")
-        .notNull()
-        .references(() => users.id, { onDelete: "cascade" }),
-      providerAccountId: text("providerAccountId").notNull(),
-      credentialPublicKey: text("credentialPublicKey").notNull(),
-      counter: integer("counter").notNull(),
-      credentialDeviceType: text("credentialDeviceType").notNull(),
-      credentialBackedUp: boolean("credentialBackedUp").notNull(),
-      transports: text("transports"),
-    },
-    (authenticator) => [
-      {
-        compositePK: primaryKey({
-          columns: [authenticator.userId, authenticator.credentialID],
-        }),
-      },
-    ]
-  )
+  pgTable,
+  text,
+  uuid,
+  timestamp,
+  boolean,
+  integer,
+  json,
+  primaryKey,
+  pgEnum,
+} from "drizzle-orm/pg-core"
+
+// ---------- Enums ----------
+export const userRoleEnum = pgEnum("user_role", ["admin", "user", "author", "customer"])
+export const postStatusEnum = pgEnum("post_status", ["draft", "published", "archived"])
+export const productStatusEnum = pgEnum("product_status", ["draft", "active", "inactive"])
+export const mediaTypeEnum = pgEnum("media_type", ["image", "video", "file"])
+export const commentTypeEnum = pgEnum("comment_type", ["post", "product"])
+export const metaTypeEnum = pgEnum("meta_type", ["post", "product", "global"])
+export const downloadTypeEnum = pgEnum("download_type", ["file", "link"])
+export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed"])
+export const orderStatusEnum = pgEnum("order_status", ["pending", "paid", "shipped", "cancelled"])
+
+// ---------- Core Tables ----------
+export const users = pgTable("user", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name"),
+  email: text("email").unique(),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
+  image: text("image"),
+  role: userRoleEnum("role").notNull().default("user"),
+})
+
+export const accounts = pgTable("account", {
+  userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  provider: text("provider").notNull(),
+  providerAccountId: text("providerAccountId").notNull(),
+  refresh_token: text("refresh_token"),
+  access_token: text("access_token"),
+  expires_at: integer("expires_at"),
+  token_type: text("token_type"),
+  scope: text("scope"),
+  id_token: text("id_token"),
+  session_state: text("session_state"),
+}, account => [primaryKey({ columns: [account.provider, account.providerAccountId] })])
+
+export const sessions = pgTable("session", {
+  sessionToken: text("sessionToken").primaryKey(),
+  userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+})
+
+export const verificationTokens = pgTable("verificationToken", {
+  identifier: text("identifier").notNull(),
+  token: text("token").notNull(),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+}, token => [primaryKey({ columns: [token.identifier, token.token] })])
+
+export const authenticators = pgTable("authenticator", {
+  credentialID: text("credentialID").notNull().unique(),
+  userId: text("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  providerAccountId: text("providerAccountId").notNull(),
+  credentialPublicKey: text("credentialPublicKey").notNull(),
+  counter: integer("counter").notNull(),
+  credentialDeviceType: text("credentialDeviceType").notNull(),
+  credentialBackedUp: boolean("credentialBackedUp").notNull(),
+  transports: text("transports"),
+}, auth => [primaryKey({ columns: [auth.userId, auth.credentialID] })])
+
+// ---------- Content Tables ----------
+export const posts = pgTable("post", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  slug: text("slug").unique().notNull(),
+  content: text("content"),
+  status: postStatusEnum("status").notNull().default("draft"),
+  authorId: text("author_id").references(() => users.id),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+})
+
+export const products = pgTable("product", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").unique().notNull(),
+  description: text("description"),
+  price: integer("price").notNull(),
+  status: productStatusEnum("status").notNull().default("draft"),
+  isDownloadable: boolean("is_downloadable").notNull().default(false),
+  content: text("content"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+})
+
+// ---------- Downloadable Products ----------
+export const downloads = pgTable("download", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  type: downloadTypeEnum("type").notNull(),
+  url: text("url").notNull(),
+  maxDownloads: integer("max_downloads").notNull().default(0),
+})
+
+// ---------- Shared Metadata ----------
+export const meta = pgTable("meta", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: metaTypeEnum("type").notNull(),
+  key: text("key").notNull(),
+  value: text("value"),
+  postId: uuid("post_id").references(() => posts.id),
+  productId: uuid("product_id").references(() => products.id),
+})
+
+// ---------- Media ----------
+export const media = pgTable("media", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  url: text("url").notNull(),
+  type: mediaTypeEnum("type").notNull(),
+  alt: text("alt"),
+  postId: uuid("post_id").references(() => posts.id),
+  productId: uuid("product_id").references(() => products.id),
+})
+
+// ---------- Categories ----------
+export const categories = pgTable("category", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").unique().notNull(),
+})
+
+export const postCategories = pgTable("post_category", {
+  postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").references(() => categories.id, { onDelete: "cascade" }),
+}, pc => [primaryKey({ columns: [pc.postId, pc.categoryId] })])
+
+export const productCategories = pgTable("product_category", {
+  productId: uuid("product_id").references(() => products.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").references(() => categories.id, { onDelete: "cascade" }),
+}, pc => [primaryKey({ columns: [pc.productId, pc.categoryId] })])
+
+// ---------- Comments & Reviews ----------
+export const comments = pgTable("comment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id),
+  type: commentTypeEnum("type").notNull(),
+  postId: uuid("post_id").references(() => posts.id),
+  productId: uuid("product_id").references(() => products.id),
+  content: text("content").notNull(),
+  rating: integer("rating"),
+  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+})
+
+// ---------- Settings ----------
+export const settings = pgTable("setting", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").unique().notNull(),
+  value: text("value").notNull(),
+})
+
+// ---------- Tags ----------
+export const tags = pgTable("tag", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+})
+
+export const postTags = pgTable("post_tag", {
+  postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }),
+  tagId: uuid("tag_id").references(() => tags.id, { onDelete: "cascade" }),
+}, pt => [primaryKey({ columns: [pt.postId, pt.tagId] })])
+
+export const productTags = pgTable("product_tag", {
+  productId: uuid("product_id").references(() => products.id, { onDelete: "cascade" }),
+  tagId: uuid("tag_id").references(() => tags.id, { onDelete: "cascade" }),
+}, pt => [primaryKey({ columns: [pt.productId, pt.tagId] })])
+
+// ---------- Orders & Payments ----------
+export const orders = pgTable("order", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id),
+  status: orderStatusEnum("status").notNull().default("pending"),
+  total: integer("total").notNull(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+})
+export const orderItems = pgTable("order_item", {
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").references(() => products.id),
+  quantity: integer("quantity").notNull(),
+  price: integer("price").notNull(),
+}, oi => [primaryKey({ columns: [oi.orderId, oi.productId] })])
+export const payments = pgTable("payment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  status: paymentStatusEnum("status").notNull().default("pending"),
+  method: text("method").notNull(),
+  amount: integer("amount").notNull(),
+  payload: json("payload"), // raw gateway response
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+})
