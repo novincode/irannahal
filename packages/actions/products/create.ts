@@ -1,10 +1,13 @@
 'use server'
 import { db } from "@db"
-import { products, productCategories, productTags, media, downloads } from "@db/schema"
+import { products, productCategories, productTags, media, downloads, meta } from "@db/schema"
 import { productFormSchema, ProductFormInput } from "./formSchema"
 import { withRole } from "@actions/utils"
 import { inArray } from "drizzle-orm"
 import type { UserSchema } from "@db/types"
+import { createFields } from "@actions/meta/create"
+import { flattenMeta } from "@actions/meta/utils"
+import { createDownloads } from "@actions/downloads/create"
 
 export const createProduct = withRole(["admin", "author"])(async (user: UserSchema, data: ProductFormInput) => {
   // Validate input (already typed, but keeps runtime safety)
@@ -20,6 +23,8 @@ export const createProduct = withRole(["admin", "author"])(async (user: UserSche
       price: input.price,
       status: input.status,
       isDownloadable: input.isDownloadable ?? false,
+      content: input.content,
+      thumbnailId: input.thumbnailId ?? null, // Save thumbnailId
     })
     .returning()
 
@@ -52,14 +57,18 @@ export const createProduct = withRole(["admin", "author"])(async (user: UserSche
 
   // Insert downloads if product is downloadable
   if (input.isDownloadable && input.downloads?.length) {
-    await db.insert(downloads).values(
-      input.downloads.map((d) => ({
-        productId: product.id,
-        type: d.type,
-        url: d.url,
-        maxDownloads: d.maxDownloads ?? 0,
-      }))
-    )
+    await createDownloads(product.id, input.downloads)
+  }
+
+  // Insert meta fields (ACF-style)
+  if (input.meta) {
+    const metaRows = flattenMeta(input.meta).map(({ key, value }) => ({
+      key,
+      value: typeof value === "string" ? value : String(value),
+    }))
+    if (metaRows.length) {
+      await createFields({ type: "product", entityId: product.id, fields: metaRows })
+    }
   }
 
   return product

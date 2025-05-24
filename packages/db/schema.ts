@@ -9,6 +9,7 @@ import {
   primaryKey,
   pgEnum,
 } from "drizzle-orm/pg-core"
+import { relations } from "drizzle-orm"
 
 // ---------- Enums ----------
 export const userRoleEnum = pgEnum("user_role", ["admin", "user", "author", "customer"])
@@ -89,6 +90,7 @@ export const products = pgTable("product", {
   status: productStatusEnum("status").notNull().default("draft"),
   isDownloadable: boolean("is_downloadable").notNull().default(false),
   content: text("content"),
+  thumbnailId: uuid("thumbnail_id"), // Just define, add .references in relations
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
 })
@@ -120,6 +122,7 @@ export const media = pgTable("media", {
   alt: text("alt"),
   postId: uuid("post_id").references(() => posts.id),
   productId: uuid("product_id").references(() => products.id),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
 })
 
 // ---------- Categories ----------
@@ -127,6 +130,7 @@ export const categories = pgTable("category", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   slug: text("slug").unique().notNull(),
+  parentId: uuid("parent_id"), // <-- just define, no .references
 })
 
 export const postCategories = pgTable("post_category", {
@@ -198,3 +202,72 @@ export const payments = pgTable("payment", {
   payload: json("payload"), // raw gateway response
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
 })
+
+// ---------- Relations ----------
+export const productsRelations = relations(products, ({ many, one }) => ({
+  categories: many(productCategories),
+  tags: many(productTags),
+  downloads: many(downloads),
+  media: many(media),
+  meta: many(meta),
+  thumbnail: one(media, { fields: [products.thumbnailId], references: [media.id] }),
+}))
+
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+  products: many(productCategories),
+  posts: many(postCategories),
+  parent: one(categories, {
+    fields: [categories.parentId],
+    references: [categories.id],
+    relationName: 'categoryParent',
+  }),
+  subCategories: many(categories, {
+    relationName: 'categoryParent',
+  }),
+}))
+
+export const tagsRelations = relations(tags, ({ many }) => ({
+  products: many(productTags),
+  posts: many(postTags),
+}))
+
+export const productCategoriesRelations = relations(productCategories, ({ one }) => ({
+  product: one(products, { fields: [productCategories.productId], references: [products.id] }),
+  category: one(categories, { fields: [productCategories.categoryId], references: [categories.id] }),
+}))
+
+export const productTagsRelations = relations(productTags, ({ one }) => ({
+  product: one(products, { fields: [productTags.productId], references: [products.id] }),
+  tag: one(tags, { fields: [productTags.tagId], references: [tags.id] }),
+}))
+
+export const downloadsRelations = relations(downloads, ({ one }) => ({
+  product: one(products, { fields: [downloads.productId], references: [products.id] }),
+}))
+
+export const mediaRelations = relations(media, ({ one }) => ({
+  product: one(products, { fields: [media.productId], references: [products.id] }),
+  post: one(posts, { fields: [media.postId], references: [posts.id] }),
+}))
+
+export const postsRelations = relations(posts, ({ many }) => ({
+  categories: many(postCategories),
+  tags: many(postTags),
+  media: many(media),
+  meta: many(meta),
+}))
+
+export const postCategoriesRelations = relations(postCategories, ({ one }) => ({
+  post: one(posts, { fields: [postCategories.postId], references: [posts.id] }),
+  category: one(categories, { fields: [postCategories.categoryId], references: [categories.id] }),
+}))
+
+export const postTagsRelations = relations(postTags, ({ one }) => ({
+  post: one(posts, { fields: [postTags.postId], references: [posts.id] }),
+  tag: one(tags, { fields: [postTags.tagId], references: [tags.id] }),
+}))
+
+export const metaRelations = relations(meta, ({ one }) => ({
+  product: one(products, { fields: [meta.productId], references: [products.id] }),
+  post: one(posts, { fields: [meta.postId], references: [posts.id] }),
+}))

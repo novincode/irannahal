@@ -4,6 +4,7 @@ import { Globe } from 'lucide-react';
 import { auth } from '@packages/auth';
 import Link from 'next/link';
 import AdminBarDropdown from './AdminBarDropdown';
+import ThemeSwitch from '../shared/ThemeSwitch';
 
 interface AdminBarProps extends CommonProps {
     isInPanel?: boolean
@@ -21,7 +22,7 @@ const AdminBar = async ({ isInPanel, ...props }: AdminBarProps) => {
 
 
     return (
-        <div className='bg-background p-1 border-b border-border shadow-lg sticky top-0 z-50 flex justify-between items-center'>
+        <div className='bg-background p-1 border-b border-border shadow-sm sticky top-0 z-50 flex justify-between items-center'>
 
             {isInPanel ?
 
@@ -40,7 +41,8 @@ const AdminBar = async ({ isInPanel, ...props }: AdminBarProps) => {
                 </Button>
             }
 
-            <div>
+            <div className='flex items-center gap-2'>
+                <ThemeSwitch className='p-1'  size={'sm'} />
                 <AdminBarDropdown admin_url={process.env.ADMIN_URL || "/admin"} />
             </div>
         </div>

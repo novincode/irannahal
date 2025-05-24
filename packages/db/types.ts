@@ -21,3 +21,4 @@ export type MetaSchema = typeof meta.$inferSelect
 export type OrderSchema = typeof orders.$inferSelect
 export type OrderItemSchema = typeof orderItems.$inferSelect
 export type PaymentSchema = typeof payments.$inferSelect
+

@@ -106,7 +106,7 @@ const MainHeader = () => {
               <Button className='p-2' variant={'ghost'} size={'icon_lg'}>
                 <MdOutlineShoppingCart className='size-full' />
               </Button>
-              <ThemeSwitch />
+              <ThemeSwitch className='size-10'  />
               <AvatarMenu />
             </div>
           </div>

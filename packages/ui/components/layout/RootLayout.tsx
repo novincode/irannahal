@@ -3,6 +3,8 @@ import { IranSansXClassName } from "@ui/fonts/fonts";
 import { ThemeProvider } from "@ui/components/providers/ThemeProvider"
 import { SessionProvider } from "next-auth/react"
 import { auth } from "@auth";
+import { Toaster } from "@shadcn/sonner"
+
 
 export default async function RootLayout({
   children,
@@ -26,6 +28,7 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <Toaster richColors />
           </ThemeProvider>
         </SessionProvider>
       </body>

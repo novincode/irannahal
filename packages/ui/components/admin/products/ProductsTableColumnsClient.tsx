@@ -54,10 +54,10 @@ export function useProductColumns(): ColumnDef<Product>[] {
     },
     {
       accessorKey: "price",
-      header: () => <div className="text-center">قیمت</div>,
+      header: () => <div className="">قیمت</div>,
       cell: ({ row }) => {
         const price = row.getValue("price") as any
-        return <div className="text-center font-medium">{price}</div>
+        return <div className=" font-medium">{price}</div>
       },
     },
     {
