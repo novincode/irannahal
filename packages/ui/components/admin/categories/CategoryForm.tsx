@@ -15,12 +15,16 @@ import {
   FormMessage,
 } from "@ui/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui/components/ui/select"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@ui/components/ui/alert-dialog"
+import { TrashIcon } from "lucide-react"
 
 interface CategoryFormProps {
-  initialData?: Partial<CategoryFormInput>
+  initialData?: Partial<CategoryFormInput> & { id?: string }
   onSubmit?: (data: CategoryFormInput) => Promise<void> | void
+  onDelete?: (id: string) => Promise<void> | void
   submitLabel?: string
   parentOptions?: { value: string; label: string }[]
+  isEditing?: boolean
 }
 
 export interface CategoryFormHandle {
@@ -31,8 +35,10 @@ export const CategoryForm = React.forwardRef<CategoryFormHandle, CategoryFormPro
   function CategoryForm({
     initialData,
     onSubmit,
+    onDelete,
     submitLabel = "ثبت دسته‌بندی",
     parentOptions = [],
+    isEditing = false,
   }, ref) {
     const form = useForm<CategoryFormInput>({
       resolver: zodResolver(categoryFormSchema),
@@ -60,6 +66,17 @@ export const CategoryForm = React.forwardRef<CategoryFormHandle, CategoryFormPro
         setLoading(false)
       }
     })
+
+    const handleDelete = async () => {
+      if (initialData?.id) {
+        setLoading(true)
+        try {
+          await onDelete?.(initialData.id)
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
 
     return (
       <Form {...form}>
@@ -117,9 +134,42 @@ export const CategoryForm = React.forwardRef<CategoryFormHandle, CategoryFormPro
             )}
           />
 
-          <Button type="submit" disabled={loading}>
-            {loading ? "در حال ثبت..." : submitLabel}
-          </Button>
+          <div className="flex gap-4 justify-between">
+            <Button type="submit" disabled={loading}>
+              {loading ? "در حال ثبت..." : submitLabel}
+            </Button>
+
+            {/* Always show delete button in edit mode if id exists, regardless of onDelete */}
+            {isEditing && initialData?.id && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" type="button" disabled={loading}>
+                    <TrashIcon className="h-4 w-4 ml-2" />
+                    حذف دسته‌بندی
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>حذف دسته‌بندی</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      آیا از حذف این دسته‌بندی اطمینان دارید؟ این عمل غیرقابل بازگشت است.
+                      <br />
+                      دسته‌های فرزند این دسته به دسته‌های بدون والد تبدیل می‌شوند.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>انصراف</AlertDialogCancel>
+                    <AlertDialogAction 
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={handleDelete}
+                    >
+                      حذف
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </form>
       </Form>
     )

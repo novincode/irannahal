@@ -8,6 +8,8 @@ import {
   json,
   primaryKey,
   pgEnum,
+  index,
+  unique,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
@@ -21,6 +23,7 @@ export const metaTypeEnum = pgEnum("meta_type", ["post", "product", "global"])
 export const downloadTypeEnum = pgEnum("download_type", ["file", "link"])
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed"])
 export const orderStatusEnum = pgEnum("order_status", ["pending", "paid", "shipped", "cancelled"])
+export const cartStatusEnum = pgEnum("cart_status", ["active", "submitted", "abandoned"])
 
 // ---------- Core Tables ----------
 export const users = pgTable("user", {
@@ -30,6 +33,7 @@ export const users = pgTable("user", {
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
   role: userRoleEnum("role").notNull().default("user"),
+  deletedAt: timestamp("deleted_at"),
 })
 
 export const accounts = pgTable("account", {
@@ -102,6 +106,8 @@ export const downloads = pgTable("download", {
   type: downloadTypeEnum("type").notNull(),
   url: text("url").notNull(),
   maxDownloads: integer("max_downloads").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 })
 
 // ---------- Shared Metadata ----------
@@ -183,16 +189,15 @@ export const productTags = pgTable("product_tag", {
 export const orders = pgTable("order", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").references(() => users.id),
+  discountId: uuid("discount_id").references(() => discounts.id, { onDelete: "set null" }),
+  discountAmount: integer("discount_amount"),
   status: orderStatusEnum("status").notNull().default("pending"),
   total: integer("total").notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 })
-export const orderItems = pgTable("order_item", {
-  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
-  productId: uuid("product_id").references(() => products.id),
-  quantity: integer("quantity").notNull(),
-  price: integer("price").notNull(),
-}, oi => [primaryKey({ columns: [oi.orderId, oi.productId] })])
+
 export const payments = pgTable("payment", {
   id: uuid("id").primaryKey().defaultRandom(),
   orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
@@ -202,6 +207,53 @@ export const payments = pgTable("payment", {
   payload: json("payload"), // raw gateway response
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
 })
+
+// ---------- Order Items ----------
+export const orderItems = pgTable("order_item", {
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").references(() => products.id),
+  quantity: integer("quantity").notNull(),
+  price: integer("price").notNull(),
+  deletedAt: timestamp("deleted_at"),
+})
+
+// ---------- Carts & Cart Items ----------
+export const carts = pgTable("cart", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+  name: text("name"),
+  status: cartStatusEnum("status").notNull().default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+})
+
+export const cartItems = pgTable("cart_item", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cartId: uuid("cart_id").references(() => carts.id, { onDelete: "cascade" }).notNull(),
+  productId: uuid("product_id").references(() => products.id, { onDelete: "cascade" }).notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+})
+
+// ---------- Discounts ----------
+export const discounts = pgTable("discount", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").unique().notNull(),
+  type: text("type").notNull(),
+  value: integer("value").notNull(),
+  maxAmount: integer("max_amount"),
+  minOrder: integer("min_order"),
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  usageLimit: integer("usage_limit"),
+  createdAt: timestamp("created_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+}, table => ({
+  codeIdx: index("discount_code_idx").on(table.code),
+}))
 
 // ---------- Relations ----------
 export const productsRelations = relations(products, ({ many, one }) => ({
@@ -270,4 +322,24 @@ export const postTagsRelations = relations(postTags, ({ one }) => ({
 export const metaRelations = relations(meta, ({ one }) => ({
   product: one(products, { fields: [meta.productId], references: [products.id] }),
   post: one(posts, { fields: [meta.postId], references: [posts.id] }),
+}))
+
+export const cartsRelations = relations(carts, ({ one, many }) => ({
+  user: one(users, { fields: [carts.userId], references: [users.id] }),
+  items: many(cartItems),
+}))
+
+export const cartItemsRelations = relations(cartItems, ({ one }) => ({
+  cart: one(carts, { fields: [cartItems.cartId], references: [carts.id] }),
+  product: one(products, { fields: [cartItems.productId], references: [products.id] }),
+}))
+
+export const discountsRelations = relations(discounts, ({ many }) => ({
+  orders: many(orders),
+}))
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, { fields: [orders.userId], references: [users.id] }),
+  discount: one(discounts, { fields: [orders.discountId], references: [discounts.id] }),
+  items: many(orderItems),
 }))

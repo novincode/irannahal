@@ -24,6 +24,7 @@ export default function EditCategoryClient({ initialData, categoryId, parentOpti
       onSubmit={handleSubmit}
       parentOptions={parentOptions}
       submitLabel="ویرایش دسته‌بندی"
+      isEditing={true}
     />
   )
 }

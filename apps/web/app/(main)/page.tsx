@@ -2,9 +2,17 @@ import React from 'react'
 import { Button } from '@shadcn/button'
 import Logo from '@ui/components/shared/Logo'
 import HeroSlider from '@ui/components/sections/HeroSlider'
+import ProductsList from '@ui/components/products/ProductsList'
+import { getProducts } from '@packages/actions/products/get'
 
 
-const page = () => {
+const page = async () => {
+
+  const products = await getProducts({
+    with: {
+      thumbnail: true
+    }
+  })
   return (
     <div className='container'>
       <div className='grid grid-cols-1 md:grid-cols-3 p-4 gap-4'>
@@ -20,6 +28,8 @@ const page = () => {
           </Button>
         </div>
       </div>
+
+      <ProductsList products={products} />
     </div>
   )
 }

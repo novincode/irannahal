@@ -109,8 +109,8 @@ export function MediaManager() {
 
             {selectMode && (
                 <div className="flex gap-2 mt-2">
-                    <Button size="sm" variant="outline" onClick={handleDeselectAll}>Deselect All</Button>
-                    <Button size="sm" variant="destructive" onClick={handleDeleteSelected} disabled={loading}>Delete Selected</Button>
+                    <Button size="sm" variant="outline" onClick={handleDeselectAll}>لغو انتخاب شده ها</Button>
+                    <Button size="sm" variant="destructive" onClick={handleDeleteSelected} disabled={loading}>حذف انتخاب شده ها</Button>
                 </div>
             )}
             <MediaGrid

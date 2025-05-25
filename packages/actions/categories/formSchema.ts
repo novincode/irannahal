@@ -1,11 +1,13 @@
 import { z } from "zod"
+import { slugify, isValidSlug } from "@ui/lib/slug"
 
 export const categoryFormSchema = z.object({
   name: z.string().min(1, "نام دسته‌بندی الزامی است"),
   slug: z
     .string()
     .min(1, "اسلاگ الزامی است")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "فرمت اسلاگ معتبر نیست"),
+    .transform((val) => slugify(val))
+    .refine(isValidSlug, { message: "اسلاگ معتبر نیست (فقط حروف فارسی/انگلیسی، عدد و خط تیره)" }),
   parentId: z.string().uuid().nullable().optional(),
 })
 

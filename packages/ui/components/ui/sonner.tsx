@@ -1,4 +1,6 @@
 'use client'
+import { IranSansXClassName } from "@packages/ui/fonts/fonts"
+import { cn } from "@packages/ui/lib/utils"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, ToasterProps } from "sonner"
 
@@ -8,7 +10,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
-      className="toaster group"
+      className={cn(
+        "toaster group",
+        IranSansXClassName
+      )}
       style={
         {
           "--normal-bg": "var(--popover)",

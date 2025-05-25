@@ -130,3 +130,6 @@
   @apply mx-auto px-4 max-w-[1200px]
 }
 
+.toaster, .toaster * {
+  font-family: 'IRANSansX', sans-serif !important;
+}

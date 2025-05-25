@@ -27,6 +27,19 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
     }
   }
 
+  // Bulk delete handler
+  const handleBulkDelete = async (ids: string[]) => {
+    setLoading(true)
+    try {
+      const { deleteCategories } = await import("@actions/categories/delete")
+      await deleteCategories(ids)
+      const updated = await getCategories({ with: { parent: true } })
+      setCategories(updated)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Prepare parent options (exclude self, but for create, just use all)
   const parentOptions = categories.map(cat => ({ value: cat.id, label: cat.name }))
 
@@ -36,7 +49,7 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
         <CategoryForm ref={formRef} onSubmit={handleCreate} parentOptions={parentOptions} submitLabel={loading ? "در حال ثبت..." : "افزودن دسته‌بندی"} />
       </div>
       <div className="md:w-2/3 w-full">
-        <CategoriesDataTable data={categories} />
+        <CategoriesDataTable data={categories} onBulkDelete={handleBulkDelete} />
       </div>
     </div>
   )

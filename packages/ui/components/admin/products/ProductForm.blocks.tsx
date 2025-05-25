@@ -1,26 +1,28 @@
 import * as React from "react"
-import { Button } from "@ui/components/ui/button"
-import { Input } from "@ui/components/ui/input"
-import { Checkbox } from "@ui/components/ui/checkbox"
-import { Textarea } from "@ui/components/ui/textarea"
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@ui/components/ui/form"
-import { ArrayFieldDnd } from "./ArrayFieldDnd"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@ui/components/ui/select"
-import { Control } from "react-hook-form"
-import { ProductFormWithMetaInput } from "@actions/products/formSchema"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@ui/components/ui/tabs"
-import { Switch } from "@ui/components/ui/switch"
-import { DownloadFilesField } from "./DownloadFilesField"
-import { AttachmentFilesField } from "./DownloadFilesField"
-import { ThumbnailSelectorField } from "./ThumbnailSelectorField"
+import type { CategoryWithDynamicRelations } from "@actions/categories/types";
+import type { TagWithDynamicRelations } from "@actions/tags/types";
+import { CategorySelectorField } from "../shared/CategorySelectorField";
+import { TagSelectorField } from "../shared/TagSelectorField";
+import { ProductStatusField, ProductMainInfoFields, ProductMetaTabs, ProductInfoTableField, ProductDownloadsField, ProductAttachmentsField, ProductThumbnailField } from "./ProductForm.fields";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { cn } from "@ui/lib/utils";
+import { PostBlock } from "../shared/PostBlock";
+import { SortablePostBlock } from "../shared/SortablePostBlock";
 
 export const FIELD_SPACING = "space-y-3"
+
+const DEFAULT_FIELDS = [
+  { id: "status", type: "status" },
+  { id: "categories", type: "categories" },
+  { id: "tags", type: "tags" },
+  { id: "thumbnail", type: "thumbnail" },
+  { id: "mainInfo", type: "mainInfo" },
+  { id: "meta", type: "meta" },
+  { id: "infoTable", type: "infoTable" },
+  { id: "attachments", type: "attachments" },
+  { id: "downloads", type: "downloads" },
+];
 
 export const blockTitles: Record<string, string> = {
   status: "وضعیت انتشار",
@@ -31,298 +33,130 @@ export const blockTitles: Record<string, string> = {
   attachments: "دانلودهای رایگان",
   downloads: "دانلودهای پس از خرید",
   thumbnail: "تصویر شاخص",
-}
+  categories: "دسته‌بندی‌ها",
+};
 
-// This function must be passed form as a closure or context in the main file
-export function renderBlockContent(block: any, form: any, loading?: boolean, submitLabel?: string) {
+export function renderBlockContent(
+  block: any,
+  form: any,
+  loading?: boolean,
+  submitLabel?: string,
+
+  selectedCategories?: any[],
+  selectedTags?: any[]
+) {
+  // Defensive: always provide arrays, never undefined
+  const categoryIds = form?.watch?.("categoryIds") ?? [];
+  const tagIds = form?.watch?.("tagIds") ?? [];
   switch (block.type) {
     case "status":
+      return <ProductStatusField control={form?.control} loading={!!loading} submitLabel={submitLabel || "ثبت محصول"} />;
+    case "categories":
       return (
-        <div className={FIELD_SPACING}>
-          <FormField<ProductFormWithMetaInput>
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>وضعیت</FormLabel>
-                <FormControl>
-                  <Select 
-                    dir="rtl" 
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value || "draft"}
-                  >
-                    <SelectTrigger className="border rounded px-2 py-1 w-full">
-                      <SelectValue placeholder="انتخاب وضعیت" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">پیش‌نویس</SelectItem>
-                      <SelectItem value="active">فعال</SelectItem>
-                      <SelectItem value="inactive">غیرفعال</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "در حال ثبت..." : submitLabel}
-          </Button>
-        </div>
-      )
+        <CategorySelectorField
+          value={categoryIds}
+          onChange={val => form?.setValue?.("categoryIds", val, { shouldDirty: true })}
+          disabled={!!loading}
+          selectedObjects={selectedCategories || []}
+        />
+      );
     case "tags":
       return (
-        <FormField<ProductFormWithMetaInput>
-          control={form.control}
-          name="meta.flags"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>برچسب‌ها</FormLabel>
-              <FormControl>
-                <select multiple {...field} className="border rounded px-2 py-1">
-                  <option value="new">جدید</option>
-                  <option value="exclusive">انحصاری</option>
-                  <option value="eco">سازگار با محیط زیست</option>
-                  <option value="bestseller">پرفروش</option>
-                </select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <TagSelectorField
+          value={tagIds}
+          onChange={val => form?.setValue?.("tagIds", val, { shouldDirty: true })}
+          disabled={!!loading}
+          selectedObjects={selectedTags || []}
         />
-      )
+      );
     case "mainInfo":
-      return (
-        <div className={FIELD_SPACING}>
-          <FormField<ProductFormWithMetaInput>
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>نام محصول</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField<ProductFormWithMetaInput>
-            control={form.control}
-            name="slug"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>اسلاگ</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField<ProductFormWithMetaInput>
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>توضیحات</FormLabel>
-                <FormControl><Textarea {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      )
+      return <ProductMainInfoFields control={form?.control} />;
     case "meta":
-      return (
-        <Tabs dir="rtl" defaultValue="general" orientation="vertical" className="flex flex-col md:flex-row w-full">
-          <TabsList className="flex md:flex-col min-w-[140px] gap-1 bg-transparent border-none h-auto self-start items-stretch">
-            <TabsTrigger value="general">عمومی</TabsTrigger>
-            <TabsTrigger value="dimensions">ابعاد و وزن</TabsTrigger>
-            <TabsTrigger value="warranty">گارانتی و ارسال</TabsTrigger>
-            <TabsTrigger value="flags">سایر</TabsTrigger>
-          </TabsList>
-          <TabsContent value="general" className="flex-1">
-            <div className={FIELD_SPACING}>
-             
-              <FormField control={form.control} name="price" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>قیمت</FormLabel>
-                  <FormControl><Input type="number" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="meta.brand" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>برند</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="meta.model" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>مدل</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="meta.sku" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>کد SKU</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="meta.barcode" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>بارکد</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="meta.customBadge" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>نشان سفارشی</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-          </TabsContent>
-          <TabsContent value="dimensions" className="flex-1">
-            <div className={FIELD_SPACING}>
-              <div className="flex gap-2">
-                <FormField control={form.control} name="meta.dimensions.width" render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>عرض (cm)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="meta.dimensions.height" render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>ارتفاع (cm)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="meta.dimensions.depth" render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>عمق (cm)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-              <FormField control={form.control} name="meta.weight" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>وزن (گرم)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-          </TabsContent>
-          <TabsContent value="warranty" className="flex-1">
-            <div className={FIELD_SPACING}>
-              <FormField control={form.control} name="meta.warranty" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>گارانتی</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="meta.shippingTime" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>زمان ارسال</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-          </TabsContent>
-          <TabsContent value="flags" className="flex-1">
-            <div className={FIELD_SPACING}>
-              <FormField control={form.control} name="meta.isLimited" render={({ field }) => (
-                <FormItem className="flex items-center gap-2">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <FormLabel className="mb-0">سری محدود؟</FormLabel>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      )
+      return <ProductMetaTabs control={form?.control} />;
     case "infoTable":
-      return (
-        <FormField<ProductFormWithMetaInput>
-          control={form.control}
-          name="meta.infoTable"
-          render={() => (
-            <ArrayFieldDnd<ProductFormWithMetaInput>
-              control={form.control}
-              name="meta.infoTable"
-              emptyItem={() => ({ label: "", value: "" })}
-              renderItem={(_item, idx, { remove, field, dragHandleProps }) => (
-                <div className="flex gap-2 items-center mb-2">
-                  <span {...dragHandleProps} className="cursor-grab">☰</span>
-                  <Input {...form.register(`meta.infoTable.${idx}.label`)} placeholder="برچسب" className="flex-1" />
-                  <Input {...form.register(`meta.infoTable.${idx}.value`)} placeholder="مقدار" className="flex-1" />
-                  <Button type="button" variant="destructive" size="sm" onClick={remove}>حذف</Button>
-                </div>
-              )}
-              addLabel="افزودن ردیف"
-            />
-          )}
-        />
-      )
-    case "downloads": {
-      // Move isDownloadable switch above downloads, and only show downloads if checked
-      return (
-        <>
-          <FormField<ProductFormWithMetaInput>
-            control={form.control}
-            name="isDownloadable"
-            render={({ field }) => (
-              <div className="flex items-center gap-2 mb-2">
-                <Switch checked={field.value} onCheckedChange={field.onChange} id="isDownloadable-switch" />
-                <label htmlFor="isDownloadable-switch" className="text-sm font-medium select-none cursor-pointer">دانلودی است؟</label>
-              </div>
-            )}
-          />
-          {form.watch("isDownloadable") && (
-            <DownloadFilesField
-              name="downloads"
-              form={form}
-              addLabel="افزودن فایل پس از خرید"
-              showLimitSwitch={true}
-            />
-          )}
-        </>
-      )
-    }
+      return <ProductInfoTableField control={form?.control} />;
+    case "downloads":
+      return <ProductDownloadsField control={form?.control} form={form} />;
     case "attachments":
-      return (
-        <AttachmentFilesField
-          name="meta.attachments"
-          addLabel="افزودن فایل رایگان"
-          form={form}
-        />
-      )
+      return <ProductAttachmentsField form={form} />;
     case "thumbnail":
-      // Thumbnail selector field using MediaDialog
-      return (
-        <ThumbnailSelectorField form={form} />
-      )
+      return <ProductThumbnailField form={form} />;
     default:
-      return null
+      return null;
   }
+}
+
+export function ProductFormFields({
+  form,
+  loading,
+  submitLabel,
+  allCategories,
+  allTags,
+  allowTagCreate,
+  onCreateTag,
+  selectedCategories,
+  selectedTags,
+}: {
+  form: any,
+  loading?: boolean,
+  submitLabel?: string,
+  allCategories: any[],
+  allTags: any[],
+  allowTagCreate?: boolean,
+  onCreateTag?: (name: string) => Promise<any>,
+  selectedCategories: any[],
+  selectedTags: any[],
+}) {
+  const [fields, setFields] = React.useState(DEFAULT_FIELDS);
+  const sensors = useSensors(useSensor(PointerSensor));
+  const [activeField, setActiveField] = React.useState<null | { id: string }>(null);
+
+  function handleDragStart(event: any) {
+    const { active } = event;
+    setActiveField({ id: String(active.id) });
+  }
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveField(null);
+    const { active, over } = event;
+    if (!over) return;
+    const oldIdx = fields.findIndex(f => f.id === String(active.id));
+    const newIdx = fields.findIndex(f => f.id === String(over.id));
+    if (oldIdx !== -1 && newIdx !== -1 && oldIdx !== newIdx) {
+      setFields(f => arrayMove(f, oldIdx, newIdx));
+    }
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <SortableContext items={fields.map(f => f.id)} strategy={verticalListSortingStrategy}>
+        <div className="flex flex-col gap-3">
+          {fields.map(field => (
+            <SortablePostBlock
+              key={field.id}
+              id={field.id}
+              title={blockTitles[field.type] || ""}
+            >
+              {renderBlockContent(
+                field,
+                form,
+                loading,
+                submitLabel,
+                selectedCategories,
+                selectedTags
+              )}
+            </SortablePostBlock>
+          ))}
+        </div>
+      </SortableContext>
+      <DragOverlay>
+        {activeField && (
+          <div>
+            <PostBlock id={activeField.id} title="">
+              <div className="h-8" />
+            </PostBlock>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
 }

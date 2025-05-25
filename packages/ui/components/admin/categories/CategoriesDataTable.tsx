@@ -19,13 +19,14 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuChe
 import { CategorySchema as Category } from "@db/types"
 import type { CategoryWithDynamicRelations } from "@actions/categories/types"
 import { ChevronDown } from "lucide-react"
-import { useCategoryColumns } from "./CategoriesTableColumnsClient"
+import { useCategoryColumns, CategoriesTableToolbar } from "./CategoriesTableColumnsClient"
 
 interface CategoriesDataTableProps {
-  data: CategoryWithDynamicRelations<{ parent: true }>[]
+  data: CategoryWithDynamicRelations<{ parent: true }>[],
+  onBulkDelete?: (ids: string[]) => Promise<void>
 }
 
-export default function CategoriesDataTable({ data }: CategoriesDataTableProps) {
+export default function CategoriesDataTable({ data, onBulkDelete }: CategoriesDataTableProps) {
   const columns = useCategoryColumns()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -53,6 +54,7 @@ export default function CategoriesDataTable({ data }: CategoriesDataTableProps) 
 
   return (
     <div>
+      <CategoriesTableToolbar table={table} onBulkDelete={onBulkDelete} />
       <div className="flex items-center py-4 gap-2">
         <Input
           placeholder="جستجو بر اساس نام..."

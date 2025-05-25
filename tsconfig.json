@@ -37,6 +37,9 @@
       "@actions/*": [
         "packages/actions/*"
       ],
+      "@data/*": [
+        "packages/data/*"
+      ],
       "@db": [
         "packages/db/index"
       ],

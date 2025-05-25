@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { productStatusEnum } from "@db/schema"
+import { slugify, isValidSlug } from "@ui/lib/slug"
 
 // --- Product Meta Schema ---
 export const productFormMetaSchema = z.object({
@@ -51,7 +52,8 @@ export const productFormSchema = z.object({
   slug: z
     .string()
     .min(1, "اسلاگ الزامی است")
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "فرمت اسلاگ معتبر نیست"),
+    .transform((val) => slugify(val))
+    .refine(isValidSlug, { message: "اسلاگ معتبر نیست (فقط حروف فارسی/انگلیسی، عدد و خط تیره)" }),
   description: z.string().optional(),
   price: z.coerce.number().int("قیمت باید عدد صحیح باشد").min(0, "قیمت نمی‌تواند منفی باشد"),
   status: z.enum(productStatusEnumValues, {

@@ -8,7 +8,7 @@ import type {
 
 import type { WithRelations, RelationInput } from "@db/relation-helpers"
 
-export const productRelationNames = ["tags", "categories", "downloads", "media", "meta"] as const
+export const productRelationNames = ["tags", "categories", "downloads", "media", "meta", "thumbnail"] as const
 export type ProductRelationName = typeof productRelationNames[number]
 
 export type ProductMetaRow = { id: string; type: string; key: string; value: string | null; postId?: string | null; productId?: string | null }
@@ -19,6 +19,7 @@ export type ProductRelationsMap = {
   downloads: DownloadSchema[]
   media: MediaSchema[]
   meta: ProductMetaRow[]
+  thumbnail: MediaSchema | null
 }
 
 export type ProductRelations = RelationInput<ProductRelationsMap>
