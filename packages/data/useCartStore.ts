@@ -15,12 +15,16 @@ export type CartState = {
   items: CartItem[];
   cartId?: string;
   cartName?: string;
+  isDrawerOpen: boolean;
   addItem: (item: { product: ProductWithDynamicRelations; quantity?: number; price?: number }) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   setCartId: (id: string) => void;
   setCartName: (name: string) => void;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  toggleDrawer: () => void;
 };
 
 export const useCartStore = create<CartState>()(
@@ -29,6 +33,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       cartId: undefined,
       cartName: undefined,
+      isDrawerOpen: false,
 
       addItem: ({ product, quantity = 1, price }) => {
         const { items } = get();
@@ -71,6 +76,10 @@ export const useCartStore = create<CartState>()(
 
       setCartId: (id) => set({ cartId: id }),
       setCartName: (name) => set({ cartName: name }),
+
+      openDrawer: () => set({ isDrawerOpen: true }),
+      closeDrawer: () => set({ isDrawerOpen: false }),
+      toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
     }),
     {
       name: 'cart-storage',

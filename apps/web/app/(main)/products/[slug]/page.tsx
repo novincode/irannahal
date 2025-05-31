@@ -7,7 +7,9 @@ interface ProductSinglePageProps {
 }
 
 export default async function ProductSinglePage({ params }: ProductSinglePageProps) {
-    const product = await getProductBySlug(params.slug, { 
+    // Decode the slug to handle Persian/Arabic characters
+    const decodedSlug = decodeURIComponent(params.slug)
+    const product = await getProductBySlug(decodedSlug, { 
         with: { 
             thumbnail: true,
             meta: true 

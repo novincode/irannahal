@@ -1,3 +1,4 @@
+'use server'
 import { db } from "@db"
 import { downloads } from "@db/schema"
 

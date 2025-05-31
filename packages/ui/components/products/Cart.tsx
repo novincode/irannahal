@@ -2,12 +2,12 @@
 
 import React from 'react'
 import { Button } from '@ui/components/ui/button'
-import { MdOutlineShoppingCart, MdAdd, MdRemove, MdClose, MdOutlineDelete } from 'react-icons/md'
+import { MdOutlineShoppingCart, MdOutlineDelete } from 'react-icons/md'
 import { ScrollArea } from '@ui/components/ui/scroll-area'
-import { Separator } from '@ui/components/ui/separator'
 import Link from 'next/link'
 import { cn } from '@ui/lib/utils'
-import { useCartStore } from '@data/useCartStore' // Use correct alias or relative import if needed
+import { useCartStore } from '@data/useCartStore'
+import { CartSingle } from './CartSingle'
 
 // Format price function
 const formatPrice = (price: number) => {
@@ -17,44 +17,23 @@ const formatPrice = (price: number) => {
 export function Cart() {
   // Zustand selectors
   const items = useCartStore((s) => s.items)
-  const updateQuantity = useCartStore((s) => s.updateQuantity)
-  const removeItem = useCartStore((s) => s.removeItem)
   const clearCart = useCartStore((s) => s.clearCart)
 
   const isEmpty = items.length === 0
   const totalItems = items.reduce((total, item) => total + item.quantity, 0)
   const subtotal = items.reduce((total, item) => total + (item.price * item.quantity), 0)
 
-  // Map Zustand cart items to UI shape
-  const uiItems = items.map(item => ({
-    id: item.product.id,
-    title: item.product.name,
-    price: item.price,
-    quantity: item.quantity,
-    imageUrl: (item.product as any).thumbnail?.url || '/placeholder.png',
-    slug: item.product.slug,
-  }))
-
-  const handleQuantityChange = (id: string, newQuantity: number) => {
-    updateQuantity(id, newQuantity)
-  }
-
-  const handleRemove = (id: string) => {
-    removeItem(id)
-  }
-
   const handleClear = () => {
     clearCart()
   }
 
   const handleCheckout = () => {
-    // You can add your checkout logic here
-    // For now, just log
-    console.log('Checkout:', items)
+    // Navigate to checkout page
+    window.location.href = '/checkout'
   }
 
   return (
-    <div className={cn("w-full space-y-4")}> {/* className prop removed, always full width */}
+    <div className={cn("w-full flex-1 flex flex-col")}> {/* className prop removed, always full width */}
       {/* Header with stats and clear button */}
       {(!isEmpty) && (
         <div className="flex items-center justify-between">
@@ -91,87 +70,19 @@ export function Cart() {
         <>
           {/* Cart Items */}
           <ScrollArea className="h-[400px] border rounded-lg">
-            <div className="divide-y p-1">
-              {uiItems.map((item) => (
-                <div key={item.id} className="group relative p-4 hover:bg-muted/20 transition-colors">
-                  <div className="flex gap-4">
-                    {/* Product Image */}
-                    {item.imageUrl && (
-                      <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-muted/50 flex-shrink-0">
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.title} 
-                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                    )}
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <Link 
-                        href={`/products/${item.slug || item.id}`}
-                        className="block font-medium text-foreground line-clamp-2 hover:text-primary transition-colors leading-snug"
-                      >
-                        {item.title}
-                      </Link>
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold text-primary">
-                          {formatPrice(item.price)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          واحد
-                        </span>
-                      </div>
-                    </div>
-                    {/* Controls */}
-                    <div className="flex flex-col items-end justify-between gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity" 
-                        onClick={() => handleRemove(item.id)}
-                      >
-                        <MdClose className="h-4 w-4" />
-                      </Button>
-                      {/* Quantity Controls */}
-                      <div className="flex items-center bg-muted rounded-lg overflow-hidden">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="h-8 w-8 rounded-none hover:bg-background/80"
-                          onClick={() => handleQuantityChange(item.id, Math.max(1, items.find(i => i.product.id === item.id)?.quantity! - 1))}
-                          disabled={items.find(i => i.product.id === item.id)?.quantity! <= 1}
-                        >
-                          <MdRemove className="h-3 w-3" />
-                        </Button>
-                        <div className="min-w-[2.5rem] text-center text-sm font-medium bg-background/50 h-8 flex items-center justify-center">
-                          {items.find(i => i.product.id === item.id)?.quantity}
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="h-8 w-8 rounded-none hover:bg-background/80"
-                          onClick={() => handleQuantityChange(item.id, (items.find(i => i.product.id === item.id)?.quantity! + 1))}
-                        >
-                          <MdAdd className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Item Total */}
-                  <div className="mt-3 flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">
-                      {items.find(i => i.product.id === item.id)?.quantity} × {formatPrice(item.price)}
-                    </span>
-                    <span className="font-semibold">
-                      {formatPrice(item.price * (items.find(i => i.product.id === item.id)?.quantity || 1))}
-                    </span>
-                  </div>
-                </div>
+            <div className="divide-y">
+              {items.map((item) => (
+                <CartSingle
+                  key={item.product.id}
+                  product={item.product}
+                  quantity={item.quantity}
+                  price={item.price}
+                />
               ))}
             </div>
           </ScrollArea>
           {/* Footer Summary */}
-          <div className="space-y-4 p-4 bg-muted/20 rounded-lg border">
+          <div className="space-y-4 p-4 bg-muted/20 rounded-lg border mt-auto">
             <div className="flex items-center justify-between text-lg">
               <span className="font-medium">مجموع کل:</span>
               <span className="font-bold text-xl text-primary">

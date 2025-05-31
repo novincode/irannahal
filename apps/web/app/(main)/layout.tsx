@@ -3,6 +3,7 @@ import MainHeader from '@ui/components/layout/MainHeader'
 import MainFooter from '@ui/components/layout/MainFooter'
 import AdminBar from '@ui/components/admin/AdminBar'
 import { auth } from '@auth'
+import CartDrawer from '@ui/components/products/CartDrawer'
 
 const layout =  ({ children }: { children: ReactNode }) => {
     return (
@@ -14,7 +15,7 @@ const layout =  ({ children }: { children: ReactNode }) => {
 
             </main>
             <MainFooter />
-
+            <CartDrawer />
         </div>
     )
 }

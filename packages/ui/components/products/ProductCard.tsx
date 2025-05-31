@@ -1,3 +1,4 @@
+'use client'
 import type { ProductWithDynamicRelations } from "@actions/products/types"
 import { Card, CardContent, CardFooter } from "@shadcn/card"
 import { Button } from "@shadcn/button"
@@ -6,6 +7,7 @@ import NextLink from "next/link"
 import Image from "next/image"
 import { getProductPageUrl } from "@actions/products/utils"
 import { useCartStore } from "@data/useCartStore" // Try relative import if alias fails
+import { useState } from "react"
 
 interface ProductCardProps {
   product: ProductWithDynamicRelations<{ thumbnail: true }>
@@ -16,6 +18,22 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
   const thumbnailUrl = product.thumbnail?.url || "/placeholder.png"
   const productUrl = getProductPageUrl(product.slug)
   const addItem = useCartStore((s: any) => s.addItem)
+  const openDrawer = useCartStore((s: any) => s.openDrawer)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleAddToCart = async () => {
+    setIsLoading(true)
+    try {
+      addItem({ product })
+      // Small delay for user feedback, then open drawer
+      setTimeout(() => {
+        openDrawer()
+        setIsLoading(false)
+      }, 300)
+    } catch (error) {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <Card className="overflow-hidden flex flex-col h-full transition-all duration-200 hover:shadow-lg">
@@ -38,10 +56,11 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
           variant="secondary"
           size="sm"
           className="absolute bottom-3 right-3 z-10 gap-2"
-          onClick={() => addItem({ product })}
+          onClick={handleAddToCart}
+          disabled={isLoading}
         >
           <ShoppingCartIcon size={16} />
-          افزودن به سبد
+          {isLoading ? 'در حال افزودن...' : 'افزودن به سبد'}
         </Button>
       </div>
       

@@ -15,6 +15,7 @@ import { relations } from "drizzle-orm"
 
 // ---------- Enums ----------
 export const userRoleEnum = pgEnum("user_role", ["admin", "user", "author", "customer"])
+export type UserRole = typeof userRoleEnum.enumValues[number]
 export const postStatusEnum = pgEnum("post_status", ["draft", "published", "archived"])
 export const productStatusEnum = pgEnum("product_status", ["draft", "active", "inactive"])
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video", "file"])
@@ -210,8 +211,9 @@ export const payments = pgTable("payment", {
 
 // ---------- Order Items ----------
 export const orderItems = pgTable("order_item", {
-  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }),
-  productId: uuid("product_id").references(() => products.id),
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "cascade" }).notNull(),
+  productId: uuid("product_id").references(() => products.id).notNull(),
   quantity: integer("quantity").notNull(),
   price: integer("price").notNull(),
   deletedAt: timestamp("deleted_at"),
@@ -233,6 +235,24 @@ export const cartItems = pgTable("cart_item", {
   cartId: uuid("cart_id").references(() => carts.id, { onDelete: "cascade" }).notNull(),
   productId: uuid("product_id").references(() => products.id, { onDelete: "cascade" }).notNull(),
   quantity: integer("quantity").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+})
+
+// ---------- User Addresses ----------
+export const addresses = pgTable("address", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone").notNull(),
+  province: text("province").notNull(),
+  city: text("city").notNull(),
+  district: text("district"),
+  address: text("address").notNull(),
+  postalCode: text("postal_code").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   deletedAt: timestamp("deleted_at"),
@@ -342,4 +362,19 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   user: one(users, { fields: [orders.userId], references: [users.id] }),
   discount: one(discounts, { fields: [orders.discountId], references: [discounts.id] }),
   items: many(orderItems),
+}))
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, { fields: [orderItems.orderId], references: [orders.id] }),
+  product: one(products, { fields: [orderItems.productId], references: [products.id] }),
+}))
+
+export const addressesRelations = relations(addresses, ({ one }) => ({
+  user: one(users, { fields: [addresses.userId], references: [users.id] }),
+}))
+
+export const usersRelations = relations(users, ({ many }) => ({
+  addresses: many(addresses),
+  orders: many(orders),
+  carts: many(carts),
 }))

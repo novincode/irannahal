@@ -1,3 +1,4 @@
+'use server'
 import { db } from "@db"
 import { meta } from "@db/schema"
 import { eq, and, inArray } from "drizzle-orm"

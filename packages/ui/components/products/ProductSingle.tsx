@@ -7,6 +7,7 @@ import { Badge } from "@shadcn/badge"
 import { MinusIcon, PlusIcon, ShoppingCartIcon } from "lucide-react"
 import Image from "next/image"
 import { useState, Fragment } from "react"
+import { useCartStore } from "@data/useCartStore"
 
 interface ProductSingleProps {
   product: ProductWithDynamicRelations<{ thumbnail: true, meta: true }>
@@ -14,7 +15,17 @@ interface ProductSingleProps {
 
 export function ProductSingle({ product }: ProductSingleProps) {
   const [quantity, setQuantity] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
   const thumbnailUrl = product.thumbnail?.url || "/placeholder.png"
+  
+  // Cart store hooks
+  const addItem = useCartStore((state) => state.addItem)
+  const openDrawer = useCartStore((state) => state.openDrawer)
+  const items = useCartStore((state) => state.items)
+  
+  // Check if product is already in cart
+  const existingItem = items.find(item => item.product.id === product.id)
+  const totalQuantityInCart = existingItem?.quantity || 0
   
   // Process meta data to make it easier to work with
   const meta = product.meta?.reduce((acc, item) => {
@@ -49,6 +60,27 @@ export function ProductSingle({ product }: ProductSingleProps) {
   
   const incrementQuantity = () => setQuantity(prev => prev + 1)
   const decrementQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1)
+  
+  const handleAddToCart = async () => {
+    setIsLoading(true)
+    try {
+      addItem({ 
+        product, 
+        quantity,
+        price: product.price 
+      })
+      
+      // Small delay for user feedback, then open drawer
+      setTimeout(() => {
+        openDrawer()
+        setIsLoading(false)
+        // Reset quantity to 1 after adding
+        setQuantity(1)
+      }, 300)
+    } catch (error) {
+      setIsLoading(false)
+    }
+  }
   
   return (
     <div className="container mx-auto py-8">
@@ -120,10 +152,22 @@ export function ProductSingle({ product }: ProductSingleProps) {
           </div>
           
           {/* Add to Cart Button */}
-          <Button size="lg" className="gap-2">
+          <Button 
+            size="lg" 
+            className="gap-2" 
+            onClick={handleAddToCart}
+            disabled={isLoading}
+          >
             <ShoppingCartIcon className="h-5 w-5" />
-            افزودن به سبد خرید
+            {isLoading ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
           </Button>
+          
+          {/* Show if already in cart */}
+          {totalQuantityInCart > 0 && (
+            <div className="text-sm text-muted-foreground">
+              در حال حاضر {totalQuantityInCart} عدد از این محصول در سبد خرید شما موجود است
+            </div>
+          )}
         </div>
       </div>
       
