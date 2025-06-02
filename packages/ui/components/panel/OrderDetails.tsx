@@ -19,21 +19,23 @@ import {
   XCircle
 } from 'lucide-react'
 import { format } from 'date-fns-jalali'
+import { formatPrice } from '@ui/lib/utils'
 import { faIR } from 'date-fns-jalali/locale'
 import type { OrderWithDynamicRelations } from '@actions/orders/types'
 
 interface OrderDetailsProps {
   order: {
     id: string
-    status: string
+    status: "pending" | "paid" | "shipped" | "cancelled"
     total: number
     discountAmount?: number | null
     createdAt: Date | null
-    items: Array<{
+    updatedAt: Date | null
+    items?: Array<{
       id: string
       quantity: number
       price: number
-      product: {
+      product?: {
         id: string
         name: string
         description?: string | null
@@ -43,26 +45,15 @@ interface OrderDetailsProps {
     discount?: {
       id: string
       code: string
-      amount: number
+      value: number
     } | null
     payments?: Array<{
       id: string
       amount: number
-      status: string
+      status: "pending" | "completed" | "failed"
       method: string
       createdAt: Date | null
     }>
-    address?: {
-      id: string
-      title: string
-      fullName: string
-      phone: string
-      address: string
-      city: string
-      province: string
-      postalCode: string
-      district?: string | null
-    } | null
   }
   onUpdateStatus?: (orderId: string, status: "pending" | "paid" | "shipped" | "cancelled") => void
   isAdmin?: boolean
@@ -97,10 +88,6 @@ const statusConfig = {
     bgColor: 'bg-red-50',
     icon: XCircle,
   },
-}
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
 }
 
 export function OrderDetails({ order, onUpdateStatus, isAdmin = false }: OrderDetailsProps) {
@@ -237,42 +224,7 @@ export function OrderDetails({ order, onUpdateStatus, isAdmin = false }: OrderDe
         </CardContent>
       </Card>
 
-      {/* Delivery Address */}
-      {order.address && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              آدرس تحویل
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{order.address.fullName}</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{order.address.phone}</span>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                <div className="flex-1">
-                  <p>{order.address.province}، {order.address.city}</p>
-                  {order.address.district && <p>{order.address.district}</p>}
-                  <p>{order.address.address}</p>
-                  <p className="text-sm text-muted-foreground">
-                    کد پستی: {order.address.postalCode}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Payment History */}
       {order.payments && order.payments.length > 0 && (

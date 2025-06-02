@@ -25,7 +25,6 @@ export default async function OrderDetailsPage({ params }: OrderDetailsPageProps
       items: { product: true },
       discount: true,
       payments: true,
-      address: true,
       user: true
     }
   )
@@ -37,7 +36,7 @@ export default async function OrderDetailsPage({ params }: OrderDetailsPageProps
   // Check if user has access to this order
   const userRole = (session.user as { role: UserRole })?.role
   if (userRole !== 'admin' && order.userId !== session.user.id) {
-    redirect('/orders')
+    redirect('/panel/orders')
   }
 
   return (

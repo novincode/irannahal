@@ -7,11 +7,7 @@ import { useCartStore } from '@data/useCartStore'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ProductWithDynamicRelations } from '@actions/products/types'
-
-// Format price function
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
+import { formatPrice } from '@ui/lib/utils'
 
 interface CartSingleProps {
   product: ProductWithDynamicRelations

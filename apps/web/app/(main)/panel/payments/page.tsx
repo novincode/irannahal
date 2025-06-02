@@ -14,10 +14,7 @@ import {
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { faIR } from 'date-fns/locale'
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
+import { formatPrice } from '@ui/lib/utils'
 
 function getStatusBadge(status: string) {
   const variants = {

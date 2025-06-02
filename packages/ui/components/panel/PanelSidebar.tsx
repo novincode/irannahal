@@ -6,58 +6,18 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@ui/lib/utils'
 import { Button } from '@shadcn/button'
 import { Card, CardContent } from '@shadcn/card'
-import { 
-  User, 
-  MapPin, 
-  ShoppingBag, 
-  CreditCard, 
-  Settings,
-  LayoutDashboard,
-  LogOut
-} from 'lucide-react'
+import { User, LogOut } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { Avatar, AvatarFallback, AvatarImage } from '@shadcn/avatar'
+import { panelMenuItems } from './menu-config'
 
 interface PanelSidebarProps {
   className?: string
 }
 
-const menuItems = [
-  {
-    title: 'داشبورد',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'آدرس‌ها',
-    href: '/addresses',
-    icon: MapPin,
-  },
-  {
-    title: 'سفارش‌ها',
-    href: '/orders',
-    icon: ShoppingBag,
-  },
-  {
-    title: 'پرداخت‌ها',
-    href: '/payments',
-    icon: CreditCard,
-  },
-  {
-    title: 'تنظیمات',
-    href: '/settings',
-    icon: Settings,
-  },
-]
-
 export function PanelSidebar({ className }: PanelSidebarProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
-  
-  // Check if we're in a panel route
-  const isInPanel = pathname?.startsWith('/dashboard') || pathname?.startsWith('/addresses') || 
-                   pathname?.startsWith('/orders') || pathname?.startsWith('/payments') || 
-                   pathname?.startsWith('/settings')
 
   const handleSignOut = () => {
     signOut({ redirectTo: '/' })
@@ -90,13 +50,12 @@ export function PanelSidebar({ className }: PanelSidebarProps) {
       {/* Navigation Menu */}
       <nav className="flex-1">
         <ul className="space-y-2">
-          {menuItems.map((item) => {
-            const href = isInPanel ? item.href : `/panel${item.href}`
-            const isActive = pathname === href || pathname?.startsWith(href + '/')
+          {panelMenuItems.map((item) => {
+            const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
             
             return (
               <li key={item.href}>
-                <Link href={href}>
+                <Link href={item.href}>
                   <Button
                     variant={isActive ? 'default' : 'ghost'}
                     className={cn(

@@ -18,6 +18,7 @@ import {
   MdArrowBack,
   MdArrowForward
 } from 'react-icons/md'
+import { formatPrice } from '@ui/lib/utils'
 
 type PaymentGateway = {
   id: string
@@ -57,10 +58,6 @@ const PAYMENT_GATEWAYS: PaymentGateway[] = [
   }
 ]
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
-
 export function PaymentStep() {
   const { state, setStep } = useCheckout()
   const [selectedGateway, setSelectedGateway] = useState<string>('')
@@ -88,7 +85,7 @@ export function PaymentStep() {
 
     try {
       // Navigate to payment page with order ID
-      router.push(`/orders/${state.orderId}/payment?gateway=${selectedGateway}`)
+      router.push(`/panel/orders/${state.orderId}/payment?gateway=${selectedGateway}`)
       
       // Clear cart after successful redirect
       clearCart()

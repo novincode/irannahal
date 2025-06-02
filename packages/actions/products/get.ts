@@ -42,7 +42,7 @@ export async function getProductBySlug<TWith extends ProductRelations>(
   opts?: { with?: TWith }
 ): Promise<ProductWithDynamicRelations<TWith> | null> {
   const product = await db.query.products.findFirst({
-    where: eq(products.slug, slug),
+    where: eq(products.slug, decodeURIComponent(slug)),
     with: normalizeWith(opts?.with),
   })
   return product as unknown as ProductWithDynamicRelations<TWith> | null

@@ -10,24 +10,27 @@ import { MdLocationOn, MdAdd, MdCheck } from 'react-icons/md'
 import { useCheckout } from '../CheckoutContext'
 import { AddressForm } from '@ui/components/panel/AddressForm'
 import { getAddresses } from '@actions/addresses/get'
-import type { Address } from '@actions/addresses/types'
+import type { AddressSchema } from '@db/types'
 
 export function AddressStep() {
-  const { state, setSelectedAddress, proceedToNext, setStep } = useCheckout()
-  const [addresses, setAddresses] = useState<Address[]>([])
+  const { state, setSelectedAddress, setAddresses, proceedToNext, setStep } = useCheckout()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [selectedAddress, setLocalSelectedAddress] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  const [selectedAddress, setLocalSelectedAddress] = useState<string>(state.selectedAddressId || '')
+
+  // Use cached addresses if available, otherwise load them
+  const addresses = state.addresses || []
+  const shouldLoadAddresses = !state.addressesLoaded
 
   useEffect(() => {
-    loadAddresses()
-  }, [])
+    if (shouldLoadAddresses) {
+      loadAddresses()
+    }
+  }, [shouldLoadAddresses])
 
   const loadAddresses = async () => {
     try {
       setLoading(true)
-      // In a real app, this would use the authenticated user's ID
-      // For demo, we'll show empty state
       const userAddresses = await getAddresses()
       setAddresses(userAddresses)
     } catch (error) {
@@ -39,7 +42,7 @@ export function AddressStep() {
   }
 
   const handleAddressCreate = () => {
-    // Reload addresses after creation
+    // Reload addresses after creation to update cache
     loadAddresses()
     setIsDialogOpen(false)
   }

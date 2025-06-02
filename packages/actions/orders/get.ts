@@ -26,153 +26,80 @@ export async function getOrders<TRelations extends Record<string, any> = {}>(
       conditions.push(eq(orders.userId, user.id))
     }
 
-  if (filters?.status) {
-    conditions.push(eq(orders.status, filters.status))
-  }
+    if (filters?.status) {
+      conditions.push(eq(orders.status, filters.status))
+    }
 
-  if (filters?.dateFrom) {
-    conditions.push(gte(orders.createdAt, filters.dateFrom))
-  }
+    if (filters?.dateFrom) {
+      conditions.push(gte(orders.createdAt, filters.dateFrom))
+    }
 
-  if (filters?.dateTo) {
-    conditions.push(lte(orders.createdAt, filters.dateTo))
-  }
+    if (filters?.dateTo) {
+      conditions.push(lte(orders.createdAt, filters.dateTo))
+    }
 
-  // Add null check for deletedAt
-  conditions.push(isNull(orders.deletedAt))
+    // Add null check for deletedAt
+    conditions.push(isNull(orders.deletedAt))
 
-  // Build base query
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
-  
-  const baseQuery = db
-    .select({
-      id: orders.id,
-      userId: orders.userId,
-      discountId: orders.discountId,
-      discountAmount: orders.discountAmount,
-      status: orders.status,
-      total: orders.total,
-      createdAt: orders.createdAt,
-      updatedAt: orders.updatedAt,
-      deletedAt: orders.deletedAt,
-    })
-    .from(orders)
-    .orderBy(desc(orders.createdAt))
-    .$dynamic()
-
-  let query = baseQuery
-
-  if (whereClause) {
-    query = query.where(whereClause)
-  }
-
-  if (filters?.limit) {
-    query = query.limit(filters.limit)
-  }
-
-  if (filters?.offset) {
-    query = query.offset(filters.offset)
-  }
-
-  const result = await query
-
-  // Handle relations separately to avoid complex joins
-  const ordersWithRelations = await Promise.all(
-    result.map(async (order) => {
-      const orderWithRelations: any = { ...order }
-
-      // Add user relation
-      if (relations?.user && order.userId) {
-        const user = await db.query.users.findFirst({
-          where: eq(users.id, order.userId),
-          columns: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            deletedAt: true,
+    // Build base query with relations using Drizzle's with syntax
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+    
+    // Use Drizzle's query builder with relations
+    const ordersQuery = db.query.orders.findMany({
+      where: whereClause,
+      orderBy: [desc(orders.createdAt)],
+      limit: filters?.limit,
+      offset: filters?.offset,
+      with: {
+        // Add relations based on what's requested
+        ...(relations?.user && {
+          user: {
+            columns: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+              deletedAt: true,
+            }
           }
-        })
-        orderWithRelations.user = user
-      }
-
-      // Add items relation
-      if (relations?.items) {
-        const items = await db
-          .select({
-            id: orderItems.id,
-            orderId: orderItems.orderId,
-            productId: orderItems.productId,
-            quantity: orderItems.quantity,
-            price: orderItems.price,
-          })
-          .from(orderItems)
-          .where(
-            and(
-              eq(orderItems.orderId, order.id),
-              isNull(orderItems.deletedAt)
-            )
-          )
-
-        // Add product data if requested
-        const itemsWithProducts = await Promise.all(
-          items.map(async (item) => {
-            const itemWithProduct: any = { ...item }
-            if (relations.items?.product) {
-              const product = await db.query.products.findFirst({
-                where: eq(products.id, item.productId),
-                columns: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  description: true,
-                  price: true,
+        }),
+        ...(relations?.items && {
+          items: {
+            where: isNull(orderItems.deletedAt),
+            with: {
+              ...(relations.items?.product && {
+                product: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    description: true,
+                    price: true,
+                  }
                 }
               })
-              itemWithProduct.product = product
             }
-            return itemWithProduct
-          })
-        )
-        
-        orderWithRelations.items = itemsWithProducts
-      }
-
-      // Add discount relation
-      if (relations?.discount && order.discountId) {
-        const discount = await db.query.discounts.findFirst({
-          where: eq(discounts.id, order.discountId),
-          columns: {
-            id: true,
-            code: true,
-            type: true,
-            value: true,
           }
+        }),
+        ...(relations?.discount && {
+          discount: {
+            columns: {
+              id: true,
+              code: true,
+              type: true,
+              value: true,
+            }
+          }
+        }),
+        ...(relations?.payments && {
+          payments: true
         })
-        orderWithRelations.discount = discount
       }
-
-      // Add payments relation
-      if (relations?.payments) {
-        const paymentsData = await db
-          .select()
-          .from(payments)
-          .where(eq(payments.orderId, order.id))
-        orderWithRelations.payments = paymentsData
-      }
-
-      // Add address relation
-      if (relations?.address) {
-        // For now, we'll add this when address is connected to orders
-        orderWithRelations.address = null
-      }
-
-      return orderWithRelations
     })
-  )
 
-    return ordersWithRelations as OrderWithDynamicRelations<TRelations>[]
+    const result = await ordersQuery
+    return result as OrderWithDynamicRelations<TRelations>[]
   })
 }
 
@@ -181,11 +108,70 @@ export async function getOrder<TRelations extends Record<string, any> = {}>(
   relations?: TRelations
 ): Promise<OrderWithDynamicRelations<TRelations> | null> {
   return withAuth(async (user) => {
-    const orders = await getOrders({ 
-      userId: user.role === 'admin' ? undefined : user.id 
-    }, relations)
+    // Build conditions
+    const conditions = [eq(orders.id, orderId), isNull(orders.deletedAt)]
     
-    return orders.find(order => order.id === orderId) || null
+    // Non-admin users can only see their own orders
+    if (user.role !== 'admin') {
+      conditions.push(eq(orders.userId, user.id))
+    }
+
+    // Use Drizzle's query builder with relations for single order
+    const order = await db.query.orders.findFirst({
+      where: and(...conditions),
+      with: {
+        // Add relations based on what's requested
+        ...(relations?.user && {
+          user: {
+            columns: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+              deletedAt: true,
+            }
+          }
+        }),
+        ...(relations?.items && {
+          items: {
+            where: isNull(orderItems.deletedAt),
+            with: {
+              ...(relations.items?.product && {
+                product: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    description: true,
+                    price: true,
+                  }
+                }
+              })
+            }
+          }
+        }),
+        ...(relations?.discount && {
+          discount: {
+            columns: {
+              id: true,
+              code: true,
+              type: true,
+              value: true,
+            }
+          }
+        }),
+        ...(relations?.payments && {
+          payments: true
+        })
+      }
+    })
+
+    if (!order) {
+      return null
+    }
+
+    return order as OrderWithDynamicRelations<TRelations>
   })
 }
 
@@ -247,5 +233,76 @@ export async function getOrderStats(userId?: string): Promise<OrderStats> {
       totalSpent: Number(totalSpentResult.total) || 0,
       averageOrderValue: Number(avgOrderResult.average) || 0,
     }
+  })
+}
+
+export async function getRecentOrders<TRelations extends Record<string, any> = {}>(
+  userId?: string,
+  limit: number = 5,
+  relations?: TRelations
+): Promise<OrderWithDynamicRelations<TRelations>[]> {
+  return withAuth(async (user) => {
+    // Non-admin users can only see their own orders
+    const targetUserId = user.role === 'admin' ? userId : user.id
+
+    const conditions = [isNull(orders.deletedAt)]
+    if (targetUserId) {
+      conditions.push(eq(orders.userId, targetUserId))
+    }
+
+    // Use Drizzle's query builder with relations
+    const recentOrders = await db.query.orders.findMany({
+      where: and(...conditions),
+      orderBy: [desc(orders.createdAt)],
+      limit,
+      with: {
+        // Add relations based on what's requested
+        ...(relations?.user && {
+          user: {
+            columns: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+              deletedAt: true,
+            }
+          }
+        }),
+        ...(relations?.items && {
+          items: {
+            where: isNull(orderItems.deletedAt),
+            with: {
+              ...(relations.items?.product && {
+                product: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    description: true,
+                    price: true,
+                  }
+                }
+              })
+            }
+          }
+        }),
+        ...(relations?.discount && {
+          discount: {
+            columns: {
+              id: true,
+              code: true,
+              type: true,
+              value: true,
+            }
+          }
+        }),
+        ...(relations?.payments && {
+          payments: true
+        })
+      }
+    })
+
+    return recentOrders as OrderWithDynamicRelations<TRelations>[]
   })
 }

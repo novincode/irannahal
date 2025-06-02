@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState } from 'react'
 import type { CheckoutContextType, CheckoutState, CheckoutStep, ShippingMethod } from './types'
+import type { AddressSchema } from '@db/types'
 
 const CheckoutContext = createContext<CheckoutContextType | null>(null)
 
@@ -49,6 +50,10 @@ export function CheckoutProvider({ children, initialAuthenticated = false }: Che
     setState(prev => ({ ...prev, orderId }))
   }
 
+  const setAddresses = (addresses: AddressSchema[]) => {
+    setState(prev => ({ ...prev, addresses, addressesLoaded: true }))
+  }
+
   const canProceedToStep = (step: CheckoutStep): boolean => {
     switch (step) {
       case 'auth':
@@ -83,6 +88,7 @@ export function CheckoutProvider({ children, initialAuthenticated = false }: Che
     setSelectedAddress,
     setSelectedShipping,
     setOrderId,
+    setAddresses,
     canProceedToStep,
     proceedToNext,
   }

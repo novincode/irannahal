@@ -11,15 +11,14 @@ import { useCartStore } from '@data/useCartStore'
 import { createOrder } from '@actions/orders/create'
 import { CartSingle } from '@ui/components/products/CartSingle'
 import { toast } from 'sonner'
-
-// Format price function
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
+import { formatPrice } from '@ui/lib/utils'
+import { useRouter } from 'next/navigation'
 
 export function ReviewStep() {
   const { state, setOrderId, proceedToNext, setStep } = useCheckout()
   const cartItems = useCartStore((s) => s.items)
+  const clearCart = useCartStore((s) => s.clearCart)
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
 
   const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
@@ -27,6 +26,11 @@ export function ReviewStep() {
   const total = subtotal + shippingCost
 
   const handleCreateOrder = async () => {
+    // Prevent duplicate orders
+    if (loading || state.orderId) {
+      return
+    }
+    
     if (!state.selectedAddressId || !state.selectedShippingMethod) {
       toast.error('لطفاً آدرس و روش ارسال را انتخاب کنید')
       return
@@ -49,8 +53,14 @@ export function ReviewStep() {
       
       if (order?.id) {
         setOrderId(order.id)
+        
+        // Clear cart since order is created
+        clearCart()
+        
         toast.success('سفارش با موفقیت ثبت شد')
-        proceedToNext() // Go to payment
+        
+        // Redirect to payment page
+        router.push(`/panel/orders/${order.id}/payment`)
       }
     } catch (error) {
       console.error('Failed to create order:', error)

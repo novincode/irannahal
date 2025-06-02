@@ -16,7 +16,6 @@ interface OrderDetailsClientProps {
     items: { product: true }
     discount: true
     payments: true
-    address: true
     user: true
   }>
   isAdmin?: boolean
@@ -167,17 +166,7 @@ export default function OrderDetailsClient({ order: initialOrder, isAdmin = fals
 
       {/* Order Details Component */}
       <OrderDetails 
-        order={{
-          ...order,
-          items: order.items || [],
-          discount: order.discount ? {
-            id: order.discount.id,
-            code: order.discount.code,
-            amount: order.discountAmount || 0
-          } : null,
-          payments: order.payments || [],
-          address: order.address || null
-        }} 
+        order={order}
         onUpdateStatus={handleUpdateStatus}
         isAdmin={isAdmin}
       />
@@ -186,7 +175,7 @@ export default function OrderDetailsClient({ order: initialOrder, isAdmin = fals
       <div className="flex gap-3">
         <Button 
           variant="outline"
-          onClick={() => router.push('/orders')}
+          onClick={() => router.push('/panel/orders')}
         >
           بازگشت به لیست سفارش‌ها
         </Button>

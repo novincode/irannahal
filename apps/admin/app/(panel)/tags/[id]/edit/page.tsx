@@ -4,11 +4,14 @@ import EditTagClient from "./EditTagClient"
 import type { TagWithDynamicRelations } from "@actions/tags/types"
 
 interface EditTagPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 const EditTagPage = async ({ params }: EditTagPageProps) => {
-  const tag: TagWithDynamicRelations<{}> | null = await getTag(params.id)
+  // Await params first
+  const { id } = await params
+  
+  const tag: TagWithDynamicRelations<{}> | null = await getTag(id)
   if (!tag) return <div>برچسب پیدا نشد</div>
   return <EditTagClient initialTag={tag} />
 }

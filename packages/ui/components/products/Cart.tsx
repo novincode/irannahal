@@ -5,14 +5,9 @@ import { Button } from '@ui/components/ui/button'
 import { MdOutlineShoppingCart, MdOutlineDelete } from 'react-icons/md'
 import { ScrollArea } from '@ui/components/ui/scroll-area'
 import Link from 'next/link'
-import { cn } from '@ui/lib/utils'
+import { cn, formatPrice } from '@ui/lib/utils'
 import { useCartStore } from '@data/useCartStore'
 import { CartSingle } from './CartSingle'
-
-// Format price function
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
 
 export function Cart() {
   // Zustand selectors

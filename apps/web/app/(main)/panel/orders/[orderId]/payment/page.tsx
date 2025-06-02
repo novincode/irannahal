@@ -15,12 +15,9 @@ import {
   MdHourglassTop,
   MdArrowBack
 } from 'react-icons/md'
+import { formatPrice } from '@ui/lib/utils'
 
 type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed'
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
 
 export default function PaymentPage() {
   const params = useParams()
@@ -36,7 +33,7 @@ export default function PaymentPage() {
   useEffect(() => {
     if (!orderId || !gateway) {
       toast.error('اطلاعات پرداخت ناقص است')
-      router.push('/orders')
+      router.push('/panel/orders')
       return
     }
     
@@ -86,7 +83,7 @@ export default function PaymentPage() {
   }
 
   const handleBackToOrders = () => {
-    router.push('/orders')
+    router.push('/panel/orders')
   }
 
   const getStatusIcon = () => {

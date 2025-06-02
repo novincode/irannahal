@@ -17,6 +17,7 @@ import {
 import { OrderCard } from '@ui/components/panel/OrderCard'
 import type { OrderWithDynamicRelations, OrderStats } from '@actions/orders/types'
 import { useRouter } from 'next/navigation'
+import { formatPrice } from '@ui/lib/utils'
 
 interface OrdersPageClientProps {
   initialOrders: OrderWithDynamicRelations<{
@@ -26,11 +27,9 @@ interface OrdersPageClientProps {
   initialStats: OrderStats
 }
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
+export default function OrdersPageClient
 
-export default function OrdersPageClient({ initialOrders, initialStats }: OrdersPageClientProps) {
+({ initialOrders, initialStats }: OrdersPageClientProps) {
   const [orders, setOrders] = useState(initialOrders)
   const [stats, setStats] = useState(initialStats)
   const [searchTerm, setSearchTerm] = useState('')
@@ -53,11 +52,11 @@ export default function OrdersPageClient({ initialOrders, initialStats }: Orders
   })
 
   const handleViewDetails = (orderId: string) => {
-    router.push(`/orders/${orderId}`)
+    router.push(`/panel/orders/${orderId}`)
   }
 
   const handleTrackOrder = (orderId: string) => {
-    router.push(`/orders/${orderId}/track`)
+    router.push(`/panel/orders/${orderId}/track`)
   }
 
   return (

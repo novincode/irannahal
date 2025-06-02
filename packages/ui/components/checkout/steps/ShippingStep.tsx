@@ -6,18 +6,14 @@ import { Button } from '@shadcn/button'
 import { RadioGroup, RadioGroupItem } from '@shadcn/radio-group'
 import { Label } from '@shadcn/label'
 import { Card, CardContent } from '@shadcn/card'
-import { TruckIcon, ClockIcon, CheckIcon } from 'lucide-react'
+import { TruckIcon, ClockIcon, CheckIcon, ArrowLeftIcon } from 'lucide-react'
 import { useCheckout } from '../CheckoutContext'
 import { SHIPPING_METHODS } from '../types'
-
-// Format price function
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
+import { formatPrice } from '@ui/lib/utils'
 
 export function ShippingStep() {
-  const { state, setSelectedShipping, proceedToNext } = useCheckout()
-  const [selectedMethod, setSelectedMethod] = useState<string>('')
+  const { state, setSelectedShipping, proceedToNext, setStep } = useCheckout()
+  const [selectedMethod, setSelectedMethod] = useState<string>(state.selectedShippingMethod?.id || '')
 
   const handleMethodSelect = (methodId: string) => {
     const method = SHIPPING_METHODS.find(m => m.id === methodId)
@@ -31,6 +27,10 @@ export function ShippingStep() {
     if (selectedMethod) {
       proceedToNext()
     }
+  }
+
+  const handleBack = () => {
+    setStep('address')
   }
 
   return (
@@ -80,7 +80,11 @@ export function ShippingStep() {
         </RadioGroup>
         
         {selectedMethod && (
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-between pt-4">
+            <Button variant="outline" onClick={handleBack} className="gap-2">
+              <ArrowLeftIcon className="w-4 h-4" />
+              بازگشت
+            </Button>
             <Button onClick={handleProceed} className="gap-2">
               ادامه
               <CheckIcon className="w-4 h-4" />

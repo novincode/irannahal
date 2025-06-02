@@ -1,4 +1,6 @@
 
+import type { AddressSchema } from '@db/types'
+
 export type CheckoutStep = 'auth' | 'address' | 'shipping' | 'review' | 'payment'
 
 export type ShippingMethod = {
@@ -15,6 +17,8 @@ export type CheckoutState = {
   selectedAddressId?: string
   selectedShippingMethod?: ShippingMethod
   orderId?: string
+  addresses?: AddressSchema[]
+  addressesLoaded?: boolean
 }
 
 export type CheckoutContextType = {
@@ -24,6 +28,7 @@ export type CheckoutContextType = {
   setSelectedAddress: (addressId: string) => void
   setSelectedShipping: (method: ShippingMethod) => void
   setOrderId: (orderId: string) => void
+  setAddresses: (addresses: AddressSchema[]) => void
   canProceedToStep: (step: CheckoutStep) => boolean
   proceedToNext: () => void
 }

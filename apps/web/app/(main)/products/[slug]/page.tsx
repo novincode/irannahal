@@ -3,13 +3,15 @@ import { ProductSingle } from "@ui/components/products/ProductSingle"
 import { notFound } from "next/navigation"
 
 interface ProductSinglePageProps {
-    params: { slug: string }
+    params: Promise<{ slug: string }>
 }
 
 export default async function ProductSinglePage({ params }: ProductSinglePageProps) {
+    // Await params first
+    const { slug } = await params
+    
     // Decode the slug to handle Persian/Arabic characters
-    const decodedSlug = decodeURIComponent(params.slug)
-    const product = await getProductBySlug(decodedSlug, { 
+    const product = await getProductBySlug(slug, { 
         with: { 
             thumbnail: true,
             meta: true 

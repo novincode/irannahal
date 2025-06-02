@@ -6,7 +6,6 @@ export interface OrderWithDynamicRelations<TRelations = {}> extends OrderSchema 
   items?: TRelations extends { items: true } ? OrderItemWithDynamicRelations<TRelations>[] : never
   discount?: TRelations extends { discount: true } ? DiscountSchema : never
   payments?: TRelations extends { payments: true } ? PaymentSchema[] : never
-  address?: TRelations extends { address: true } ? AddressSchema : never
 }
 
 // Order item with relations

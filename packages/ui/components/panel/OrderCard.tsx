@@ -14,32 +14,16 @@ import {
   Truck,
   AlertCircle
 } from 'lucide-react'
+import { formatPrice } from '@ui/lib/utils'
+import type { OrderWithDynamicRelations, OrderItemWithDynamicRelations } from '@actions/orders/types'
 import { format } from 'date-fns-jalali'
 import { faIR } from 'date-fns-jalali/locale'
-import type { OrderWithDynamicRelations } from '@actions/orders/types'
 
 interface OrderCardProps {
-  order: {
-    id: string
-    status: string
-    total: number
-    discountAmount?: number | null
-    createdAt: Date | null
-    items: Array<{
-      id: string
-      quantity: number
-      price: number
-      product: {
-        id: string
-        name: string
-      } | null
-    }>
-    discount?: {
-      id: string
-      code: string
-      amount: number
-    } | null
-  }
+  order: OrderWithDynamicRelations<{
+    items: { product: true }
+    discount: true
+  }>
   onViewDetails?: (orderId: string) => void
   onTrackOrder?: (orderId: string) => void
 }
@@ -75,13 +59,12 @@ const statusConfig = {
   },
 }
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان'
-}
-
 export function OrderCard({ order, onViewDetails, onTrackOrder }: OrderCardProps) {
   const status = statusConfig[order.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
+  
+  // Type guard for items
+  const orderItems = 'items' in order && Array.isArray(order.items) ? order.items : []
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -114,7 +97,7 @@ export function OrderCard({ order, onViewDetails, onTrackOrder }: OrderCardProps
         <div className="space-y-2">
           <h4 className="font-medium text-sm text-muted-foreground">محصولات سفارش</h4>
           <div className="space-y-1">
-            {order.items?.slice(0, 2).map((item, index) => (
+            {orderItems.slice(0, 2).map((item: any, index: number) => (
               <div key={index} className="flex justify-between text-sm">
                 <span className="flex-1 truncate">
                   {item.product?.name || 'محصول'} × {item.quantity}
@@ -124,9 +107,9 @@ export function OrderCard({ order, onViewDetails, onTrackOrder }: OrderCardProps
                 </span>
               </div>
             ))}
-            {order.items && order.items.length > 2 && (
+            {orderItems.length > 2 && (
               <p className="text-xs text-muted-foreground">
-                و {order.items.length - 2} محصول دیگر...
+                و {orderItems.length - 2} محصول دیگر...
               </p>
             )}
           </div>
@@ -138,7 +121,7 @@ export function OrderCard({ order, onViewDetails, onTrackOrder }: OrderCardProps
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>تعداد کل محصولات:</span>
-            <span>{order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0}</span>
+            <span>{order.items && Array.isArray(order.items) ? (order.items as any[]).reduce((sum: number, item: any) => sum + item.quantity, 0) : 0}</span>
           </div>
           
           {order.discountAmount && order.discountAmount > 0 && (
