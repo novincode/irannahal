@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Plus, Settings, Trash2, Edit, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MenuBuilder } from "@ui/components/admin/menu/MenuBuilder";
+import { NextKalaMenuBuilder } from "@ui/components/admin/menu/NextKalaMenuBuilder";
 import { 
   getMenus, 
   getMenuWithItems,
@@ -203,38 +203,6 @@ export function MenuManagement() {
     setShowMenuEditor(true);
   };
 
-  const handleMenuItemsChange = (items: any[]) => {
-    if (selectedMenu) {
-      const updatedMenu = {
-        ...selectedMenu,
-        items,
-      };
-      setSelectedMenu(updatedMenu);
-      setMenus(menus.map(menu => 
-        menu.id === selectedMenu.id ? updatedMenu : menu
-      ));
-    }
-  };
-
-  const handleAddMenuItem = () => {
-    // This can be implemented to show a menu item creation dialog
-    // For now, we'll log it as a placeholder
-    console.log('Add menu item requested');
-    // You could open a dialog here to create new menu items
-  };
-
-  const handleEditMenuItem = (item: any) => {
-    // This can be implemented to show a menu item edit dialog
-    console.log('Edit menu item requested:', item);
-    // You could open a dialog here to edit menu items
-  };
-
-  const handleDeleteMenuItem = (itemId: string) => {
-    // This can be implemented to delete menu items
-    console.log('Delete menu item requested:', itemId);
-    // You could implement deletion logic here
-  };
-
   return (
     <div className="space-y-6">
       {/* Menu Selection */}
@@ -322,14 +290,9 @@ export function MenuManagement() {
 
       {/* Menu Builder */}
       {selectedMenu && (
-        <MenuBuilder
+        <NextKalaMenuBuilder
           menuId={selectedMenu.id}
-          menuItems={selectedMenu.items}
-          onMenuItemsChange={handleMenuItemsChange}
-          onAddItem={handleAddMenuItem}
-          onEditItem={handleEditMenuItem}
-          onDeleteItem={handleDeleteMenuItem}
-          isLoading={isLoading}
+          initialMenuItems={selectedMenu.items}
         />
       )}
 
