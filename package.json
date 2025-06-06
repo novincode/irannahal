@@ -1,9 +1,5 @@
 {
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -17,7 +13,9 @@
     "db:push": "cd packages/db && drizzle-kit push",
     "db:studio": "cd packages/db && drizzle-kit studio",
     "db:reset": "tsx scripts/reset-db.ts",
-    "db": "pnpm run db:generate && pnpm run db:push"
+    "db:check": "tsx scripts/db-check.ts",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "db": "pnpm run db:migrate"
   },
   "packageManager": "pnpm@8.15.4",
   "dependencies": {

@@ -13,7 +13,7 @@ import {
   SidebarMenuSubItem,
 } from "@shadcn/sidebar"
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@shadcn/collapsible"
-import { LayoutDashboard, Users, Settings, ShoppingCart, Package, CreditCard, BarChart2, ChevronDown, LogOut, Tag } from "lucide-react"
+import { LayoutDashboard, Users, Settings, ShoppingCart, Package, CreditCard, BarChart2, ChevronDown, LogOut, Tag, Menu } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { ScrollArea } from "@ui/components/ui/scroll-area"
@@ -63,6 +63,12 @@ const items = [
       { title: "همه سفارش‌ها", url: "orders", icon: ShoppingCart },
       { title: "پرداخت‌ها", url: "payments", icon: CreditCard },
     ],
+  },
+   {
+    title: "منوها",
+    icon: Menu,
+    url: "menu",
+  
   },
   {
     title: "کاربران",

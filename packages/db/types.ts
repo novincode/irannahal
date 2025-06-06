@@ -1,4 +1,4 @@
-import { users, accounts, sessions, verificationTokens, authenticators, media, categories, tags, posts, products, postTags, productTags, postCategories, productCategories, comments, settings, downloads, meta, orders, orderItems, payments, carts, cartItems, discounts, addresses } from './schema'
+import { users, accounts, sessions, verificationTokens, authenticators, media, categories, tags, posts, products, postTags, productTags, postCategories, productCategories, comments, settings, downloads, meta, orders, orderItems, payments, carts, cartItems, discounts, addresses, menus, menuItems } from './schema'
 
 export type UserSchema = typeof users.$inferSelect
 export type AccountSchema = typeof accounts.$inferSelect
@@ -25,4 +25,6 @@ export type CartSchema = typeof carts.$inferSelect
 export type CartItemSchema = typeof cartItems.$inferSelect
 export type DiscountSchema = typeof discounts.$inferSelect
 export type AddressSchema = typeof addresses.$inferSelect
+export type MenuSchema = typeof menus.$inferSelect
+export type MenuItemSchema = typeof menuItems.$inferSelect
 

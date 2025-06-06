@@ -25,6 +25,8 @@ export const downloadTypeEnum = pgEnum("download_type", ["file", "link"])
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed"])
 export const orderStatusEnum = pgEnum("order_status", ["pending", "paid", "shipped", "cancelled"])
 export const cartStatusEnum = pgEnum("cart_status", ["active", "submitted", "abandoned"])
+export const menuItemTypeEnum = pgEnum("menu_item_type", ["custom", "page", "category", "product", "tag", "external"])
+export type MenuItemType = typeof menuItemTypeEnum.enumValues[number]
 
 // ---------- Core Tables ----------
 export const users = pgTable("user", {
@@ -275,6 +277,35 @@ export const discounts = pgTable("discount", {
   codeIdx: index("discount_code_idx").on(table.code),
 }))
 
+// ---------- Menu System ----------
+export const menus = pgTable("menu", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  location: text("location"), // e.g., "main", "footer", "sidebar"
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+})
+
+export const menuItems = pgTable("menu_item", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  menuId: uuid("menu_id").notNull().references(() => menus.id, { onDelete: "cascade" }),
+  parentId: uuid("parent_id").references((): any => menuItems.id, { onDelete: "cascade" }),
+  order: integer("order").notNull().default(0),
+  label: text("label").notNull(),
+  type: menuItemTypeEnum("type").notNull().default("custom"),
+  url: text("url"), // For custom or external links
+  target: text("target").default("_self"), // _self, _blank, etc.
+  rel: text("rel"), // noopener, noreferrer, etc.
+  linkedResourceId: uuid("linked_resource_id"), // For posts, products, categories, tags
+  cssClasses: text("css_classes"), // Custom CSS classes
+  isVisible: boolean("is_visible").notNull().default(true),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow(),
+})
+
 // ---------- Relations ----------
 export const productsRelations = relations(products, ({ many, one }) => ({
   categories: many(productCategories),
@@ -382,4 +413,45 @@ export const usersRelations = relations(users, ({ many }) => ({
   addresses: many(addresses),
   orders: many(orders),
   carts: many(carts),
+}))
+
+// ---------- Menu Relations ----------
+export const menuRelations = relations(menus, ({ many }) => ({
+  items: many(menuItems),
+}))
+
+export const menuItemRelations = relations(menuItems, ({ one, many }) => ({
+  menu: one(menus, {
+    fields: [menuItems.menuId],
+    references: [menus.id],
+  }),
+  parent: one(menuItems, {
+    fields: [menuItems.parentId],
+    references: [menuItems.id],
+    relationName: "parentMenuItem",
+  }),
+  children: many(menuItems, {
+    relationName: "parentMenuItem",
+  }),
+  // Dynamic relations based on type and linkedResourceId
+  linkedPost: one(posts, {
+    fields: [menuItems.linkedResourceId],
+    references: [posts.id],
+    relationName: "menuLinkedPost",
+  }),
+  linkedProduct: one(products, {
+    fields: [menuItems.linkedResourceId],
+    references: [products.id],
+    relationName: "menuLinkedProduct",
+  }),
+  linkedCategory: one(categories, {
+    fields: [menuItems.linkedResourceId],
+    references: [categories.id],
+    relationName: "menuLinkedCategory",
+  }),
+  linkedTag: one(tags, {
+    fields: [menuItems.linkedResourceId],
+    references: [tags.id],
+    relationName: "menuLinkedTag",
+  }),
 }))

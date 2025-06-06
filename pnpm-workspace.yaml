@@ -1,4 +1,3 @@
-# List all workspace packages for pnpm
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - "apps/*"
+  - "packages/*"
