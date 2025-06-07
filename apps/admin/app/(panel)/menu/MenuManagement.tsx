@@ -1,380 +1,206 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect } from "react";
-import { Button } from "@ui/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@ui/components/ui/card";
-import { Input } from "@ui/components/ui/input";
-import { Label } from "@ui/components/ui/label";
-import { Textarea } from "@ui/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@ui/components/ui/dialog";
-import { Plus, Settings, Trash2, Edit, Eye, EyeOff } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { NextKalaMenuBuilder } from "@ui/components/admin/menu/NextKalaMenuBuilder";
-import { 
-  getMenus, 
-  getMenuWithItems,
-  createMenu, 
-  updateMenu, 
-  deleteMenu,
-  menuFormSchema,
-  type MenuWithItems,
-  type MenuFormData 
-} from "@actions/menu";
+import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@shadcn/card'
+import { Button } from '@shadcn/button'
+import { Input } from '@shadcn/input'
+import { Label } from '@shadcn/label'
+import { Plus, Edit, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { createMenu } from '@actions/menu/create'
+import { deleteMenu } from '@actions/menu/delete'
+import { toast } from 'sonner'
+import type { Menu } from '@actions/menu/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@shadcn/alert-dialog'
 
-export function MenuManagement() {
-  const [menus, setMenus] = useState<MenuWithItems[]>([]);
-  const [selectedMenu, setSelectedMenu] = useState<MenuWithItems | null>(null);
-  const [showMenuEditor, setShowMenuEditor] = useState(false);
-  const [editingMenu, setEditingMenu] = useState<MenuWithItems | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+interface MenuManagementProps {
+  initialMenus: Menu[]
+}
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<MenuFormData>({
-    resolver: zodResolver(menuFormSchema),
-    defaultValues: {
-      name: '',
-      slug: '',
-      description: '',
-      location: '',
-    },
-  });
+export default function MenuManagement({ initialMenus }: MenuManagementProps) {
+  const [menus, setMenus] = useState<Menu[]>(initialMenus)
+  const [newMenuName, setNewMenuName] = useState('')
+  const [newMenuSlug, setNewMenuSlug] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
-  // Load menus on component mount
-  useEffect(() => {
-    loadMenus();
-  }, []);
+  const handleCreateMenu = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newMenuName.trim() || !newMenuSlug.trim()) {
+      toast.error('نام و نامک منو الزامی است')
+      return
+    }
 
-  const loadMenus = async () => {
+    setIsCreating(true)
     try {
-      setIsLoading(true);
-      const response = await getMenus();
-      if (response.success && response.data) {
-        // Convert Menu[] to MenuWithItems[] by adding empty items array
-        const menusWithItems: MenuWithItems[] = response.data.map(menu => ({
-          ...menu,
-          items: []
-        }));
-        setMenus(menusWithItems);
-        if (menusWithItems.length > 0 && !selectedMenu) {
-          // Load the first menu with its items
-          loadMenuItems(menusWithItems[0].id);
-        }
+      const response = await createMenu({
+        name: newMenuName.trim(),
+        slug: newMenuSlug.trim(),
+      })
+
+      if (response.success) {
+        setMenus(prev => [...prev, response.data])
+        setNewMenuName('')
+        setNewMenuSlug('')
+        toast.success('منو با موفقیت ایجاد شد')
+      } else {
+        toast.error(response.error || 'خطا در ایجاد منو')
       }
     } catch (error) {
-      console.error('Failed to load menus:', error);
+      toast.error('خطا در ایجاد منو')
     } finally {
-      setIsLoading(false);
+      setIsCreating(false)
     }
-  };
-
-  const loadMenuItems = async (menuId: string) => {
-    try {
-      const response = await getMenuWithItems(menuId);
-      if (response.success && response.data) {
-        setSelectedMenu(response.data);
-        // Update menus list with the loaded items
-        setMenus(prevMenus => 
-          prevMenus.map(menu => 
-            menu.id === menuId ? response.data! : menu
-          )
-        );
-      }
-    } catch (error) {
-      console.error('Failed to load menu items:', error);
-    }
-  };
-
-  const getMenuItemCount = (items: any[]): number => {
-    let count = items.length;
-    items.forEach(item => {
-      if (item.children && item.children.length > 0) {
-        count += getMenuItemCount(item.children);
-      }
-    });
-    return count;
-  };
-
-  const handleMenuSelect = async (menu: MenuWithItems) => {
-    if (menu.id === selectedMenu?.id) return;
-    
-    setIsLoading(true);
-    try {
-      await loadMenuItems(menu.id);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateMenu = async (data: MenuFormData) => {
-    try {
-      setIsLoading(true);
-      const response = await createMenu(data);
-      if (response.success && response.data) {
-        const newMenu: MenuWithItems = {
-          ...response.data,
-          items: [],
-        };
-        setMenus([...menus, newMenu]);
-        setSelectedMenu(newMenu);
-        setShowMenuEditor(false);
-        reset();
-      }
-    } catch (error) {
-      console.error('Failed to create menu:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdateMenu = async (data: MenuFormData) => {
-    if (!editingMenu) return;
-
-    try {
-      setIsLoading(true);
-      const response = await updateMenu(editingMenu.id, data);
-      if (response.success && response.data) {
-        const updatedMenus = menus.map(menu => 
-          menu.id === editingMenu.id 
-            ? { ...menu, ...response.data } 
-            : menu
-        );
-        setMenus(updatedMenus);
-        if (selectedMenu?.id === editingMenu.id) {
-          setSelectedMenu({ ...selectedMenu, ...response.data });
-        }
-        setShowMenuEditor(false);
-        setEditingMenu(null);
-        reset();
-      }
-    } catch (error) {
-      console.error('Failed to update menu:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }
 
   const handleDeleteMenu = async (menuId: string) => {
-    if (!confirm('آیا مطمئن هستید که می‌خواهید این منو را حذف کنید؟ این عمل قابل بازگشت نیست.')) {
-      return;
-    }
-
     try {
-      setIsLoading(true);
-      const response = await deleteMenu(menuId);
+      const response = await deleteMenu(menuId)
       if (response.success) {
-        const updatedMenus = menus.filter(menu => menu.id !== menuId);
-        setMenus(updatedMenus);
-        if (selectedMenu?.id === menuId) {
-          setSelectedMenu(updatedMenus.length > 0 ? updatedMenus[0] : null);
-        }
+        setMenus(prev => prev.filter(menu => menu.id !== menuId))
+        toast.success('منو با موفقیت حذف شد')
+      } else {
+        toast.error(response.error || 'خطا در حذف منو')
       }
     } catch (error) {
-      console.error('Failed to delete menu:', error);
-    } finally {
-      setIsLoading(false);
+      toast.error('خطا در حذف منو')
     }
-  };
+  }
 
-  const handleEditMenu = (menu: MenuWithItems) => {
-    setEditingMenu(menu);
-    reset({
-      name: menu.name,
-      slug: menu.slug,
-      description: menu.description || '',
-      location: menu.location || '',
-    });
-    setShowMenuEditor(true);
-  };
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  }
 
-  const handleNewMenu = () => {
-    setEditingMenu(null);
-    reset({
-      name: '',
-      slug: '',
-      description: '',
-      location: '',
-    });
-    setShowMenuEditor(true);
-  };
+  const handleNameChange = (name: string) => {
+    setNewMenuName(name)
+    if (!newMenuSlug) {
+      setNewMenuSlug(generateSlug(name))
+    }
+  }
 
   return (
     <div className="space-y-6">
-      {/* Menu Selection */}
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold">مدیریت منوها</h1>
+        <p className="text-muted-foreground mt-2">
+          منوهای سایت را ایجاد و مدیریت کنید
+        </p>
+      </div>
+
+      {/* Create New Menu */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            منوهای شما
-            <Button onClick={handleNewMenu} size="sm">
-              <Plus className="h-4 w-4 ml-2" />
-              منوی جدید
-            </Button>
+          <CardTitle className="flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            ایجاد منو جدید
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {menus.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
-                هیچ منویی یافت نشد. اولین منوی خود را ایجاد کنید تا شروع کنید.
-              </p>
-              <Button onClick={handleNewMenu}>
-                <Plus className="h-4 w-4 ml-2" />
-                ایجاد منو
+          <form onSubmit={handleCreateMenu} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="menu-name">نام منو</Label>
+              <Input
+                id="menu-name"
+                placeholder="مثال: منو اصلی"
+                value={newMenuName}
+                onChange={(e) => handleNameChange(e.target.value)}
+                disabled={isCreating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="menu-slug">نامک منو</Label>
+              <Input
+                id="menu-slug"
+                placeholder="menu-main"
+                value={newMenuSlug}
+                onChange={(e) => setNewMenuSlug(e.target.value)}
+                disabled={isCreating}
+              />
+            </div>
+            <div className="flex items-end">
+              <Button 
+                type="submit" 
+                disabled={isCreating || !newMenuName.trim() || !newMenuSlug.trim()}
+                className="w-full"
+              >
+                {isCreating ? 'در حال ایجاد...' : 'ایجاد منو'}
               </Button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {menus.map((menu) => (
-                  <Card 
-                    key={menu.id} 
-                    className={`cursor-pointer transition-colors ${
-                      selectedMenu?.id === menu.id 
-                        ? 'ring-2 ring-primary bg-primary/5' 
-                        : 'hover:bg-muted/50'
-                    }`}
-                    onClick={() => handleMenuSelect(menu)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{menu.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {selectedMenu?.id === menu.id 
-                              ? `${getMenuItemCount(menu.items)} آیتم`
-                              : "بارگذاری..."
-                            }
-                          </p>
-                          {menu.location && (
-                            <p className="text-xs text-muted-foreground">
-                              موقعیت: {menu.location}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditMenu(menu);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteMenu(menu.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+          </form>
         </CardContent>
       </Card>
 
-      {/* Menu Builder */}
-      {selectedMenu && (
-        <NextKalaMenuBuilder
-          menuId={selectedMenu.id}
-          initialMenuItems={selectedMenu.items}
-        />
-      )}
-
-      {/* Menu Editor Dialog */}
-      {showMenuEditor && (
-        <Dialog open={showMenuEditor} onOpenChange={setShowMenuEditor}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingMenu ? 'ویرایش منو' : 'ایجاد منوی جدید'}
-              </DialogTitle>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmit(editingMenu ? handleUpdateMenu : handleCreateMenu)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">نام منو *</Label>
-                <Input
-                  id="name"
-                  placeholder="ناوبری اصلی"
-                  {...register('name')}
-                  className={errors.name ? 'border-destructive' : ''}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="slug">نامک *</Label>
-                <Input
-                  id="slug"
-                  placeholder="main-navigation"
-                  {...register('slug')}
-                  className={errors.slug ? 'border-destructive' : ''}
-                />
-                {errors.slug && (
-                  <p className="text-sm text-destructive">{errors.slug.message}</p>
-                )}
-                <p className="text-sm text-muted-foreground">
-                  برای شناسایی این منو در کد استفاده می‌شود
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">موقعیت</Label>
-                <Input
-                  id="location"
-                  placeholder="هدر، فوتر، نوار کناری"
-                  {...register('location')}
-                />
-                <p className="text-sm text-muted-foreground">
-                  مکانی که این منو نمایش داده خواهد شد
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">توضیحات</Label>
-                <Textarea
-                  id="description"
-                  placeholder="هدف این منو را توضیح دهید..."
-                  {...register('description')}
-                  rows={3}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowMenuEditor(false)}
-                  disabled={isLoading}
-                >
-                  لغو
+      {/* Existing Menus */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {menus.map((menu) => (
+          <Card key={menu.id} className="group">
+            <CardHeader>
+              <CardTitle className="text-lg">{menu.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">نامک: {menu.slug}</p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <Button asChild className="flex-1">
+                  <Link href={`/menu/${menu.id}/edit`}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    ویرایش منو
+                  </Link>
                 </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'در حال ذخیره...' : editingMenu ? 'بروزرسانی' : 'ایجاد'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="icon">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>حذف منو</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        آیا مطمئن هستید که می‌خواهید منو "{menu.name}" را حذف کنید؟
+                        این عمل غیرقابل برگشت است و تمام آیتم‌های منو نیز حذف خواهند شد.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>لغو</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteMenu(menu.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        حذف
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {menus.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">
+              هنوز منویی ایجاد نشده است. اولین منو خود را ایجاد کنید.
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
-  );
+  )
 }
