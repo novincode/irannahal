@@ -11,8 +11,9 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  closestCorners,
   UniqueIdentifier,
+  useDroppable,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -21,14 +22,57 @@ import {
 } from '@dnd-kit/sortable'
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn/card'
 import { Button } from '@shadcn/button'
-import { Plus, Save, ArrowLeft } from 'lucide-react'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shadcn/drawer'
+import { Plus, Save, ArrowLeft, Target } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { cn } from '@ui/lib/utils'
 import { updateMenuItemsOrder } from '@actions/menu/update'
 import type { MenuWithItems, MenuItemWithChildren, MenuItemOrderUpdate } from '@actions/menu/types'
 import MenuItemForm from './MenuItemForm'
 import SortableMenuItem from './SortableMenuItem'
-import { flattenMenuItems, buildHierarchy } from './menuUtils'
+import DroppableContainer from './DroppableContainer'
+import { flattenMenuItems, buildHierarchy, canMoveToParent } from './menuUtils'
+
+// Root Drop Zone Component for easier dropping into root
+function RootDropZone({ 
+  id, 
+  children, 
+  position = 'top' 
+}: { 
+  id: string
+  children?: React.ReactNode
+  position?: 'top' | 'bottom'
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "transition-all duration-200 rounded-lg border-2 border-dashed",
+        isOver 
+          ? "border-primary bg-primary/10 shadow-lg" 
+          : "border-muted-foreground/20 hover:border-muted-foreground/40",
+        position === 'top' ? 'mb-4' : 'mt-4',
+        children ? 'min-h-[120px] p-4' : 'h-16'
+      )}
+    >
+      {children || (
+        <div className="flex items-center justify-center h-full">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Target className="h-5 w-5" />
+            <span className="text-sm font-medium">
+              {isOver ? 'اینجا رها کنید' : `آیتم‌ها را به ${position === 'top' ? 'بالای' : 'پایین'} منو بکشید`}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface MenuEditorProps {
   menu: MenuWithItems
@@ -40,6 +84,8 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
   const [editingItem, setEditingItem] = useState<MenuItemWithChildren | null>(null)
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [openDropZones, setOpenDropZones] = useState<Set<string>>(new Set())
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -53,112 +99,135 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
   // Flatten items for drag and drop
   const flatItems = useMemo(() => flattenMenuItems(items), [items])
 
-  const findContainer = useCallback((id: UniqueIdentifier): string | null => {
-    // Check if the id is a top-level item (root container)
-    if (items.find(item => item.id === id && !item.parentId)) {
-      return 'root'
-    }
-    
-    // Find which parent container this item belongs to
-    for (const item of flatItems) {
-      if (item.children.find(child => child.id === id)) {
-        return item.id
+  const toggleCollapse = useCallback((itemId: string) => {
+    setCollapsed(prev => {
+      const newCollapsed = new Set(prev)
+      if (newCollapsed.has(itemId)) {
+        newCollapsed.delete(itemId)
+      } else {
+        newCollapsed.add(itemId)
       }
-    }
-    
-    return null
-  }, [items, flatItems])
+      return newCollapsed
+    })
+  }, [])
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const toggleDropZone = useCallback((itemId: string) => {
+    setOpenDropZones(prev => {
+      const newOpenDropZones = new Set(prev)
+      if (newOpenDropZones.has(itemId)) {
+        newOpenDropZones.delete(itemId)
+      } else {
+        newOpenDropZones.add(itemId)
+      }
+      return newOpenDropZones
+    })
+  }, [])
+
+  // Remove these helper functions that were causing dependency issues
+  // We'll inline the logic in handleDragEnd to avoid circular dependencies
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id)
-  }
+  }, [])
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    // Only handle visual feedback here, no state updates to prevent infinite loops
+    // All logic moved to handleDragEnd
+  }, [])
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
-    if (!over) return
+    setActiveId(null)
+
+    if (!over || active.id === over.id) return
 
     const activeId = active.id as string
     const overId = over.id as string
 
-    // Find containers
-    const activeContainer = findContainer(activeId)
-    const overContainer = findContainer(overId) || 'root'
+    // Handle root drop zones
+    if (overId === 'root-top' || overId === 'root-bottom' || overId === 'root') {
+      setItems(prevItems => {
+        const allFlatItems = flattenMenuItems(prevItems)
+        const activeItem = allFlatItems.find(item => item.id === activeId)
+        if (!activeItem) return prevItems
 
-    if (activeContainer === overContainer) return
-
-    // Moving between containers
-    setItems(prevItems => {
-      const activeItem = flatItems.find(item => item.id === activeId)
-      if (!activeItem) return prevItems
-
-      // Remove from old container and add to new container
-      const newParentId = overContainer === 'root' ? null : overContainer
-      
-      const updatedFlatItems = flatItems.map(item => {
-        if (item.id === activeId) {
-          return { ...item, parentId: newParentId }
-        }
-        return item
+        // Remove from current position and add to root
+        const otherItems = allFlatItems.filter(item => item.id !== activeId)
+        const rootItems = otherItems.filter(item => !item.parentId)
+        const updatedActiveItem = { ...activeItem, parentId: null, order: rootItems.length }
+        
+        return buildHierarchy([...otherItems, updatedActiveItem])
       })
-
-      return buildHierarchy(updatedFlatItems)
-    })
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (!over) {
-      setActiveId(null)
       return
     }
 
-    const activeId = active.id as string
-    const overId = over.id as string
+    // Handle drop zone nesting (when dropping into a specific parent's drop zone)
+    if (overId.startsWith('drop-zone-')) {
+      const parentId = overId.replace('drop-zone-', '')
+      
+      setItems(prevItems => {
+        const allFlatItems = flattenMenuItems(prevItems)
+        const activeItem = allFlatItems.find(item => item.id === activeId)
+        if (!activeItem) return prevItems
 
-    const activeContainer = findContainer(activeId)
-    const overContainer = findContainer(overId) || 'root'
+        // Prevent circular nesting
+        if (!canMoveToParent(prevItems, activeId, parentId)) {
+          toast.error('نمی‌توان آیتم را به زیرمجموعه خودش منتقل کرد')
+          return prevItems
+        }
 
-    if (activeContainer === overContainer) {
-      // Reordering within the same container
-      if (activeContainer === 'root') {
-        const topLevelItems = items.filter(item => !item.parentId)
-        const oldIndex = topLevelItems.findIndex(item => item.id === activeId)
-        const newIndex = topLevelItems.findIndex(item => item.id === overId)
+        // Remove from current position and add as child
+        const otherItems = allFlatItems.filter(item => item.id !== activeId)
+        const parentChildren = otherItems.filter(item => item.parentId === parentId)
+        const updatedActiveItem = { ...activeItem, parentId, order: parentChildren.length }
         
-        if (oldIndex !== newIndex) {
-          const reorderedTopLevel = arrayMove(topLevelItems, oldIndex, newIndex)
-          const otherItems = items.filter(item => item.parentId)
-          setItems([...reorderedTopLevel, ...otherItems])
-        }
-      } else {
-        // Reordering within a parent's children
-        const parentItem = flatItems.find(item => item.id === activeContainer)
-        if (parentItem) {
-          const oldIndex = parentItem.children.findIndex(item => item.id === activeId)
-          const newIndex = parentItem.children.findIndex(item => item.id === overId)
-          
-          if (oldIndex !== newIndex) {
-            const reorderedChildren = arrayMove(parentItem.children, oldIndex, newIndex)
-            
-            setItems(prevItems => {
-              const updatedFlatItems = flatItems.map(item => {
-                if (item.id === activeContainer) {
-                  return { ...item, children: reorderedChildren }
-                }
-                return item
-              })
-              return buildHierarchy(updatedFlatItems)
-            })
-          }
-        }
-      }
+        const finalItems = buildHierarchy([...otherItems, updatedActiveItem])
+        
+        // Close the drop zone after successful drop
+        setOpenDropZones(prev => {
+          const updated = new Set(prev)
+          updated.delete(parentId)
+          return updated
+        })
+        
+        toast.success('آیتم با موفقیت جابجا شد')
+        return finalItems
+      })
+      return
     }
 
-    setActiveId(null)
-  }
+    // Handle reordering within the same level (normal DnD Kit behavior)
+    setItems(prevItems => {
+      const allFlatItems = flattenMenuItems(prevItems)
+      const activeItem = allFlatItems.find(item => item.id === activeId)
+      const overItem = allFlatItems.find(item => item.id === overId)
+      
+      if (!activeItem || !overItem) return prevItems
+      
+      // Only reorder if they're at the same level
+      if (activeItem.parentId === overItem.parentId) {
+        const siblings = allFlatItems.filter(item => item.parentId === activeItem.parentId)
+        const oldIndex = siblings.findIndex(item => item.id === activeId)
+        const newIndex = siblings.findIndex(item => item.id === overId)
+        
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const reorderedSiblings = arrayMove(siblings, oldIndex, newIndex)
+          const otherItems = allFlatItems.filter(item => item.parentId !== activeItem.parentId)
+          
+          const updatedSiblings = reorderedSiblings.map((item, index) => ({
+            ...item,
+            order: index
+          }))
+          
+          return buildHierarchy([...otherItems, ...updatedSiblings])
+        }
+      }
+      
+      return prevItems
+    })
+  }, [])
 
-  const handleSaveOrder = async () => {
+  const handleSaveOrder = useCallback(async () => {
     setIsSaving(true)
     try {
       const orderUpdates: MenuItemOrderUpdate[] = []
@@ -191,14 +260,14 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [items])
 
-  const handleItemCreated = (newItem: MenuItemWithChildren) => {
+  const handleItemCreated = useCallback((newItem: MenuItemWithChildren) => {
     setItems(prevItems => buildHierarchy([...flattenMenuItems(prevItems), newItem]))
     setShowForm(false)
-  }
+  }, [])
 
-  const handleItemUpdated = (updatedItem: MenuItemWithChildren) => {
+  const handleItemUpdated = useCallback((updatedItem: MenuItemWithChildren) => {
     setItems(prevItems => {
       const flatList = flattenMenuItems(prevItems).map(item =>
         item.id === updatedItem.id ? updatedItem : item
@@ -206,39 +275,24 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
       return buildHierarchy(flatList)
     })
     setEditingItem(null)
-  }
+  }, [])
 
-  const handleItemDeleted = (deletedItemId: string) => {
+  const handleItemDeleted = useCallback((deletedItemId: string) => {
     setItems(prevItems => {
       const flatList = flattenMenuItems(prevItems).filter(item => item.id !== deletedItemId)
       return buildHierarchy(flatList)
     })
     setEditingItem(null)
-  }
+  }, [])
 
-  const activeItem = activeId ? flatItems.find(item => item.id === activeId) : null
+  const handleEditItem = useCallback((item: MenuItemWithChildren) => {
+    setEditingItem(item)
+  }, [])
 
-  const renderMenuLevel = (levelItems: MenuItemWithChildren[], depth = 0) => {
-    const itemIds = levelItems.map(item => item.id)
-    
-    return (
-      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-        <div className={`space-y-2 ${depth > 0 ? 'ml-8 pl-4 border-l-2 border-muted' : ''}`}>
-          {levelItems.map((item) => (
-            <div key={item.id}>
-              <SortableMenuItem
-                item={item}
-                depth={depth}
-                onEdit={setEditingItem}
-                onDelete={handleItemDeleted}
-              />
-              {item.children.length > 0 && renderMenuLevel(item.children, depth + 1)}
-            </div>
-          ))}
-        </div>
-      </SortableContext>
-    )
-  }
+  const activeItem = useMemo(() => 
+    activeId ? flatItems.find(item => item.id === activeId) : null, 
+    [activeId, flatItems]
+  )
 
   return (
     <div className="space-y-6">
@@ -279,50 +333,88 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Menu Builder */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>ساختار منو</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-              >
-                {items.length > 0 ? (
-                  renderMenuLevel(items.filter(item => !item.parentId))
-                ) : (
-                  <div className="text-center py-12">
+      {/* Menu Builder */}
+      <Card>
+        <CardHeader>
+          <CardTitle>ساختار منو</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            {/* Top Root Drop Zone */}
+            <RootDropZone id="root-top" position="top" />
+
+            {items.length > 0 ? (
+              <DroppableContainer
+                id="root"
+                items={items.filter(item => !item.parentId)}
+                depth={0}
+                onEdit={handleEditItem}
+                onDelete={handleItemDeleted}
+                onToggleCollapse={toggleCollapse}
+                onToggleDropZone={toggleDropZone}
+                collapsed={collapsed}
+                openDropZones={openDropZones}
+              />
+            ) : (
+              <RootDropZone id="root">
+                <div className="text-center py-12">
+                  <div className="flex flex-col items-center gap-4">
+                    <Target className="h-12 w-12 text-muted-foreground/50" />
                     <p className="text-muted-foreground">
                       هنوز آیتمی به منو اضافه نشده است.
                     </p>
+                    <p className="text-sm text-muted-foreground/70">
+                      آیتم‌ها را اینجا بکشید یا دکمه افزودن آیتم را کلیک کنید
+                    </p>
                   </div>
-                )}
+                </div>
+              </RootDropZone>
+            )}
 
-                <DragOverlay>
-                  {activeItem ? (
-                    <SortableMenuItem
-                      item={activeItem}
-                      depth={0}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                      isDragging
-                    />
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Bottom Root Drop Zone */}
+            {items.length > 0 && <RootDropZone id="root-bottom" position="bottom" />}
 
-        {/* Form Panel */}
-        <div className="lg:col-span-1">
-          {(showForm || editingItem) && (
+            <DragOverlay>
+              {activeItem ? (
+                <SortableMenuItem
+                  item={activeItem}
+                  depth={0}
+                  onEdit={() => {}}
+                  onDelete={() => {}}
+                  onToggleCollapse={() => {}}
+                  isCollapsed={false}
+                  isDragging
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </CardContent>
+      </Card>
+
+      {/* Form Drawer - RTL positioned on the right */}
+      <Drawer 
+        direction="left" 
+        open={showForm || !!editingItem} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowForm(false)
+            setEditingItem(null)
+          }
+        }}
+      >
+        <DrawerContent className="h-full w-[600px] mt-0 rounded-none">
+          <DrawerHeader className="border-b">
+            <DrawerTitle className="text-right">
+              {editingItem ? 'ویرایش آیتم منو' : 'افزودن آیتم جدید'}
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto p-6">
             <MenuItemForm
               menuId={menu.id}
               editingItem={editingItem}
@@ -333,9 +425,9 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
                 setEditingItem(null)
               }}
             />
-          )}
-        </div>
-      </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }
