@@ -178,8 +178,7 @@ function SortableMenuItem({
           "mb-2 transition-all duration-200",
           isDraggingThis && "shadow-lg ring-2 ring-primary",
           !item.isVisible && "opacity-60",
-          isBeingDraggedOver && dragOverInfo?.action === 'reorder' && "ring-2 ring-blue-300 bg-blue-50/50",
-          isBeingDraggedOver && dragOverInfo?.action === 'unnest' && "ring-2 ring-orange-300 bg-orange-50/50"
+          isBeingDraggedOver && "opacity-50"
         )}
         style={indentationStyle}
       >
