@@ -22,6 +22,55 @@ import {
 import type { MenuItemWithChildren } from '@actions/menu/types'
 import { cn } from '@ui/lib/utils'
 
+// Drop Indicator Component for showing insertion points
+function DropIndicator({ 
+  position, 
+  isActive,
+  action
+}: { 
+  position: 'top' | 'bottom' | 'inside'
+  isActive: boolean
+  action?: 'reorder' | 'nest' | 'unnest' | 'root'
+}) {
+  if (!isActive) return null
+
+  const getIndicatorColor = () => {
+    switch (action) {
+      case 'nest':
+        return 'border-green-500 bg-green-50'
+      case 'unnest':
+        return 'border-orange-500 bg-orange-50'
+      case 'root':
+        return 'border-blue-500 bg-blue-50'
+      case 'reorder':
+      default:
+        return 'border-primary bg-primary/10'
+    }
+  }
+
+  if (position === 'inside') {
+    return (
+      <div className={cn(
+        "absolute inset-0 rounded-lg border-2 border-dashed pointer-events-none z-10",
+        getIndicatorColor()
+      )}>
+        <div className="absolute inset-2 rounded border border-current opacity-50" />
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn(
+      "absolute left-0 right-0 h-0.5 pointer-events-none z-10",
+      position === 'top' ? '-top-1' : '-bottom-1',
+      getIndicatorColor().replace('bg-', 'bg-').replace('border-', 'bg-')
+    )}>
+      <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-current" />
+      <div className="absolute -right-1 -top-1 w-2 h-2 rounded-full bg-current" />
+    </div>
+  )
+}
+
 interface SortableMenuItemProps {
   item: MenuItemWithChildren
   depth: number
@@ -32,6 +81,12 @@ interface SortableMenuItemProps {
   isCollapsed?: boolean
   isDropZoneOpen?: boolean
   isDragging?: boolean
+  dragOverInfo?: {
+    overId: string
+    action: 'reorder' | 'nest' | 'unnest' | 'root'
+    insertPosition?: 'before' | 'after'
+    actionHint?: string
+  } | null
 }
 
 const getItemTypeColor = (type: string) => {
@@ -67,7 +122,8 @@ function SortableMenuItem({
   onToggleDropZone,
   isCollapsed = false,
   isDropZoneOpen = false,
-  isDragging = false
+  isDragging = false,
+  dragOverInfo
 }: SortableMenuItemProps) {
   const {
     attributes,
@@ -87,6 +143,12 @@ function SortableMenuItem({
     paddingRight: `${depth * 20}px`, // RTL: changed paddingLeft to paddingRight
   }
 
+  // Check if this item is being dragged over
+  const isBeingDraggedOver = dragOverInfo?.overId === item.id
+  const showTopIndicator = isBeingDraggedOver && dragOverInfo?.insertPosition === 'after'
+  const showBottomIndicator = isBeingDraggedOver && dragOverInfo?.insertPosition === 'before'
+  const showNestIndicator = isBeingDraggedOver && dragOverInfo?.action === 'nest'
+
   return (
     <div
       ref={setNodeRef}
@@ -97,11 +159,27 @@ function SortableMenuItem({
         isDraggingThis && "z-50"
       )}
     >
+      {/* Top insertion indicator */}
+      <DropIndicator 
+        position="top" 
+        isActive={showTopIndicator} 
+        action={dragOverInfo?.action}
+      />
+      
+      {/* Nesting indicator */}
+      <DropIndicator 
+        position="inside" 
+        isActive={showNestIndicator} 
+        action={dragOverInfo?.action}
+      />
+      
       <Card 
         className={cn(
           "mb-2 transition-all duration-200",
           isDraggingThis && "shadow-lg ring-2 ring-primary",
-          !item.isVisible && "opacity-60"
+          !item.isVisible && "opacity-60",
+          isBeingDraggedOver && dragOverInfo?.action === 'reorder' && "ring-2 ring-blue-300 bg-blue-50/50",
+          isBeingDraggedOver && dragOverInfo?.action === 'unnest' && "ring-2 ring-orange-300 bg-orange-50/50"
         )}
         style={indentationStyle}
       >
@@ -220,6 +298,13 @@ function SortableMenuItem({
           </div>
         </div>
       </Card>
+      
+      {/* Bottom insertion indicator */}
+      <DropIndicator 
+        position="bottom" 
+        isActive={showBottomIndicator} 
+        action={dragOverInfo?.action}
+      />
     </div>
   )
 }

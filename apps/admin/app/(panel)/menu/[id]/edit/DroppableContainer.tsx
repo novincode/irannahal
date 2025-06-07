@@ -17,6 +17,12 @@ interface DroppableContainerProps {
   onToggleDropZone?: (itemId: string) => void
   collapsed: Set<string>
   openDropZones?: Set<string>
+  dragOverInfo?: {
+    overId: string
+    action: 'reorder' | 'nest' | 'unnest' | 'root'
+    insertPosition?: 'before' | 'after'
+    actionHint?: string
+  } | null
 }
 
 function DroppableContainer({
@@ -28,7 +34,8 @@ function DroppableContainer({
   onToggleCollapse,
   onToggleDropZone,
   collapsed,
-  openDropZones = new Set()
+  openDropZones = new Set(),
+  dragOverInfo
 }: DroppableContainerProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
@@ -59,6 +66,7 @@ function DroppableContainer({
                 onToggleDropZone={onToggleDropZone}
                 isCollapsed={collapsed.has(item.id)}
                 isDropZoneOpen={openDropZones?.has(item.id)}
+                dragOverInfo={dragOverInfo}
               />
               
               {/* Show drop zone when it's open */}
@@ -74,6 +82,7 @@ function DroppableContainer({
                     onToggleDropZone={onToggleDropZone}
                     collapsed={collapsed}
                     openDropZones={openDropZones}
+                    dragOverInfo={dragOverInfo}
                   />
                 </div>
               )}
@@ -90,6 +99,7 @@ function DroppableContainer({
                   onToggleDropZone={onToggleDropZone}
                   collapsed={collapsed}
                   openDropZones={openDropZones}
+                  dragOverInfo={dragOverInfo}
                 />
               )}
             </div>
