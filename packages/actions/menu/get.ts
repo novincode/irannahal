@@ -56,6 +56,57 @@ export async function getMenuById(id: string): Promise<GetMenuResponse> {
   })
 }
 
+export async function getMenuBySlug(slug: string): Promise<GetMenuWithItemsResponse> {
+  try {
+    // Get menu by slug (no auth required for public menu display)
+    const [menu] = await db
+      .select()
+      .from(menus)
+      .where(eq(menus.slug, slug))
+      .limit(1)
+
+    if (!menu) {
+      return {
+        success: false,
+        error: "منو پیدا نشد",
+        code: "MENU_NOT_FOUND",
+        timestamp: new Date(),
+        data: undefined as never,
+      }
+    }
+
+    // Get all menu items for this menu
+    const allItems = await db
+      .select()
+      .from(menuItems)
+      .where(eq(menuItems.menuId, menu.id))
+      .orderBy(asc(menuItems.order))
+
+    // Build hierarchical structure
+    const itemsWithChildren = buildMenuHierarchy(allItems)
+
+    const menuWithItems: MenuWithItems = {
+      ...menu,
+      items: itemsWithChildren,
+    }
+
+    return {
+      success: true,
+      timestamp: new Date(),
+      data: menuWithItems,
+    }
+  } catch (error) {
+    console.error("Failed to get menu by slug:", error)
+    return {
+      success: false,
+      error: "خطا در دریافت منو",
+      code: "INTERNAL_ERROR",
+      timestamp: new Date(),
+      data: undefined as never,
+    }
+  }
+}
+
 export async function getAllMenus(): Promise<GetMenusResponse> {
   return withAuth(async (user) => {
     try {

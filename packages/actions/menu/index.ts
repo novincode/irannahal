@@ -4,7 +4,7 @@
 
 // Export all action functions
 export { createMenu, createMenuItem } from "./create"
-export { getMenuById, getAllMenus, getUserMenus, getMenuWithItems, getLinkableResources } from "./get"
+export { getMenuById, getAllMenus, getUserMenus, getMenuWithItems, getMenuBySlug, getLinkableResources } from "./get"
 export { updateMenu, updateMenuItem, updateMenuItemsOrder } from "./update"
 export { deleteMenu, deleteMenuItem } from "./delete"
 
