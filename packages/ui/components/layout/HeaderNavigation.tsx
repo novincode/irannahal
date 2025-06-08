@@ -1,19 +1,19 @@
 import React from 'react'
-import { getMenuBySlug } from '@actions/menu'
+import { cachedGetMenuBySlug } from '@actions/menu'
 import MenuDisplay from '@ui/components/shared/MenuDisplay'
 
 const HeaderNavigation = async () => {
   try {
-    const response = await getMenuBySlug('header')
+    const menu = await cachedGetMenuBySlug('header')
     
-    if (!response.success || !response.data || !response.data.items || response.data.items.length === 0) {
+    if (!menu || !menu.items || menu.items.length === 0) {
       return null
     }
 
     return (
       <nav className="border-t border-border bg-card p-2">
         <div className="container flex">
-          <MenuDisplay items={response.data.items} />
+          <MenuDisplay items={menu.items} />
         </div>
       </nav>
     )

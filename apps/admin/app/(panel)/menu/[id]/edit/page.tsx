@@ -1,5 +1,5 @@
 import React from 'react'
-import { getMenuWithItems } from '@actions/menu/get'
+import { cachedGetMenuWithItems } from '@actions/menu'
 import { notFound } from 'next/navigation'
 import MenuEditor from './MenuEditor'
 
@@ -10,11 +10,11 @@ interface MenuEditPageProps {
 export default async function MenuEditPage({ params }: MenuEditPageProps) {
   const { id } = await params
   
-  const response = await getMenuWithItems(id)
-  
-  if (!response.success || !response.data) {
+  try {
+    const menu = await cachedGetMenuWithItems(id)
+    return <MenuEditor menu={menu} />
+  } catch (error) {
+    console.error('Failed to load menu:', error)
     notFound()
   }
-
-  return <MenuEditor menu={response.data} />
 }

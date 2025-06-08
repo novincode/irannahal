@@ -7,8 +7,7 @@ import { Input } from '@shadcn/input'
 import { Label } from '@shadcn/label'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { createMenu } from '@actions/menu/create'
-import { deleteMenu } from '@actions/menu/delete'
+import { menuCacheOperations } from '@actions/menu'
 import { toast } from 'sonner'
 import type { Menu } from '@actions/menu/types'
 import {
@@ -42,19 +41,15 @@ export default function MenuManagement({ initialMenus }: MenuManagementProps) {
 
     setIsCreating(true)
     try {
-      const response = await createMenu({
+      const newMenu = await menuCacheOperations.createMenu({
         name: newMenuName.trim(),
         slug: newMenuSlug.trim(),
       })
 
-      if (response.success) {
-        setMenus(prev => [...prev, response.data])
-        setNewMenuName('')
-        setNewMenuSlug('')
-        toast.success('منو با موفقیت ایجاد شد')
-      } else {
-        toast.error(response.error || 'خطا در ایجاد منو')
-      }
+      setMenus(prev => [...prev, newMenu])
+      setNewMenuName('')
+      setNewMenuSlug('')
+      toast.success('منو با موفقیت ایجاد شد')
     } catch (error) {
       toast.error('خطا در ایجاد منو')
     } finally {
@@ -64,13 +59,9 @@ export default function MenuManagement({ initialMenus }: MenuManagementProps) {
 
   const handleDeleteMenu = async (menuId: string) => {
     try {
-      const response = await deleteMenu(menuId)
-      if (response.success) {
-        setMenus(prev => prev.filter(menu => menu.id !== menuId))
-        toast.success('منو با موفقیت حذف شد')
-      } else {
-        toast.error(response.error || 'خطا در حذف منو')
-      }
+      await menuCacheOperations.deleteMenu(menuId)
+      setMenus(prev => prev.filter(menu => menu.id !== menuId))
+      toast.success('منو با موفقیت حذف شد')
     } catch (error) {
       toast.error('خطا در حذف منو')
     }

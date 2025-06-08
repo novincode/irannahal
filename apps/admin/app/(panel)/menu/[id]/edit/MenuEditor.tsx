@@ -27,7 +27,7 @@ import { Plus, Save, ArrowLeft, Target, ArrowDown, ArrowRight, MoveUp, Folder } 
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { cn } from '@ui/lib/utils'
-import { updateMenuItemsOrder } from '@actions/menu/update'
+import { menuCacheOperations } from '@actions/menu'
 import type { MenuWithItems, MenuItemWithChildren, MenuItemOrderUpdate } from '@actions/menu/types'
 import MenuItemForm from './MenuItemForm'
 import SortableMenuItem from './SortableMenuItem'
@@ -506,13 +506,8 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
 
       processItems(items)
 
-      const response = await updateMenuItemsOrder({ items: orderUpdates })
-      
-      if (response.success) {
-        toast.success('ترتیب منو با موفقیت ذخیره شد')
-      } else {
-        toast.error(response.error || 'خطا در ذخیره ترتیب منو')
-      }
+      await menuCacheOperations.updateMenuItemsOrder({ items: orderUpdates })
+      toast.success('ترتیب منو با موفقیت ذخیره شد')
     } catch (error) {
       toast.error('خطا در ذخیره ترتیب منو')
     } finally {

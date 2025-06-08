@@ -25,10 +25,7 @@ import {
 } from '@shadcn/form'
 import { X, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { createMenuItem } from '@actions/menu/create'
-import { updateMenuItem } from '@actions/menu/update'
-import { deleteMenuItem } from '@actions/menu/delete'
-import { getLinkableResources } from '@actions/menu/get'
+import { menuCacheOperations, cachedGetLinkableResources } from '@actions/menu'
 import { menuItemFormSchema, type MenuItemFormData } from '@actions/menu/formSchema'
 import type { MenuItemWithChildren, GroupedLinkableResources } from '@actions/menu/types'
 import {
@@ -126,10 +123,8 @@ export default function MenuItemForm({
 
   const loadLinkableResources = async () => {
     try {
-      const response = await getLinkableResources()
-      if (response.success) {
-        setLinkableResources(response.data)
-      }
+      const resources = await cachedGetLinkableResources()
+      setLinkableResources(resources)
     } catch (error) {
       console.error('Failed to load linkable resources:', error)
     }
@@ -139,33 +134,25 @@ export default function MenuItemForm({
     setIsSubmitting(true)
     try {
       if (isEditing && editingItem) {
-        const response = await updateMenuItem({
+        const updatedItem = await menuCacheOperations.updateMenuItem({
           ...data,
           id: editingItem.id,
         })
         
-        if (response.success) {
-          onItemUpdated({ ...editingItem, ...response.data, children: editingItem.children })
-          toast.success('آیتم منو با موفقیت به‌روزرسانی شد')
-        } else {
-          toast.error(response.error || 'خطا در به‌روزرسانی آیتم منو')
-        }
+        onItemUpdated({ ...editingItem, ...updatedItem, children: editingItem.children })
+        toast.success('آیتم منو با موفقیت به‌روزرسانی شد')
       } else {
-        const response = await createMenuItem({
+        const newItem = await menuCacheOperations.createMenuItem({
           ...data,
           menuId,
         })
         
-        if (response.success) {
-          onItemCreated({ ...response.data, children: [] })
-          toast.success('آیتم منو با موفقیت ایجاد شد')
-          form.reset()
-        } else {
-          toast.error(response.error || 'خطا در ایجاد آیتم منو')
-        }
+        onItemCreated({ ...newItem, children: [] })
+        toast.success('آیتم منو با موفقیت ایجاد شد')
+        form.reset()
       }
     } catch (error) {
-      toast.error('خطای غیرمنتظره رخ داد')
+      toast.error(error instanceof Error ? error.message : 'خطای غیرمنتظره رخ داد')
     } finally {
       setIsSubmitting(false)
     }
@@ -176,15 +163,11 @@ export default function MenuItemForm({
     
     setIsDeleting(true)
     try {
-      const response = await deleteMenuItem(editingItem.id)
-      if (response.success) {
-        toast.success('آیتم منو با موفقیت حذف شد')
-        onClose()
-      } else {
-        toast.error(response.error || 'خطا در حذف آیتم منو')
-      }
+      await menuCacheOperations.deleteMenuItem(editingItem.id)
+      toast.success('آیتم منو با موفقیت حذف شد')
+      onClose()
     } catch (error) {
-      toast.error('خطا در حذف آیتم منو')
+      toast.error(error instanceof Error ? error.message : 'خطا در حذف آیتم منو')
     } finally {
       setIsDeleting(false)
     }
