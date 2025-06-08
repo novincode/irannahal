@@ -45,6 +45,7 @@ interface MenuItemFormProps {
   editingItem?: MenuItemWithChildren | null
   onItemCreated: (item: MenuItemWithChildren) => void
   onItemUpdated: (item: MenuItemWithChildren) => void
+  onItemDeleted: (itemId: string) => void
   onClose: () => void
 }
 
@@ -69,6 +70,7 @@ export default function MenuItemForm({
   editingItem,
   onItemCreated,
   onItemUpdated,
+  onItemDeleted,
   onClose
 }: MenuItemFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -165,6 +167,7 @@ export default function MenuItemForm({
     try {
       await menuCacheOperations.deleteMenuItem(editingItem.id)
       toast.success('آیتم منو با موفقیت حذف شد')
+      onItemDeleted(editingItem.id)
       onClose()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'خطا در حذف آیتم منو')

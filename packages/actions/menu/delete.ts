@@ -1,6 +1,6 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import { db } from "@db"
 import { menus, menuItems } from "@db/schema"
 import { withAdmin } from "@actions/utils"
@@ -79,7 +79,7 @@ export async function deleteMenuItem(id: string) {
     if (descendantIds.length > 0) {
       await db
         .delete(menuItems)
-        .where(eq(menuItems.parentId, id))
+        .where(inArray(menuItems.id, descendantIds))
     }
 
     // Delete the menu item

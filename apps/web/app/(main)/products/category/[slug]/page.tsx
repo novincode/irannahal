@@ -7,12 +7,13 @@ import { CategoryArchivePage } from "@ui/components/products/CategoryArchivePage
 import { Metadata } from 'next'
 
 interface CategoryArchivePageProps {
-  params: { slug: string }
-  searchParams: { [key: string]: string | string[] | undefined }
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export async function generateMetadata({ params }: CategoryArchivePageProps): Promise<Metadata> {
-  const category = await getCategoryBySlug(params.slug)
+  const { slug } = await params
+  const category = await getCategoryBySlug(slug)
   
   if (!category) {
     return {
@@ -27,16 +28,22 @@ export async function generateMetadata({ params }: CategoryArchivePageProps): Pr
 }
 
 export default async function CategoryArchive({ params, searchParams }: CategoryArchivePageProps) {
+  // Await params first
+  const { slug } = await params
+  
   // Get category first
-  const category = await getCategoryBySlug(params.slug)
+  const category = await getCategoryBySlug(slug)
   
   if (!category) {
     notFound()
   }
 
+  // Await searchParams
+  const searchParamsResolved = await searchParams
+
   // Convert Next.js searchParams to URLSearchParams
   const urlSearchParams = new URLSearchParams()
-  Object.entries(searchParams).forEach(([key, value]) => {
+  Object.entries(searchParamsResolved).forEach(([key, value]) => {
     if (value) {
       const valueStr = Array.isArray(value) ? value[0] : value
       urlSearchParams.set(key, valueStr)
@@ -54,7 +61,7 @@ export default async function CategoryArchive({ params, searchParams }: Category
 
   // Fetch data in parallel
   const [archiveResult, availableFilters] = await Promise.all([
-    getProductsByCategory({ categorySlug: params.slug, filters: currentFilters }),
+    getProductsByCategory({ categorySlug: slug, filters: currentFilters }),
     getAvailableFilters(filtersWithCategory)
   ])
 

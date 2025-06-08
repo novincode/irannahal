@@ -25,6 +25,7 @@ import { Button } from '@shadcn/button'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shadcn/drawer'
 import { Plus, Save, ArrowLeft, Target, ArrowDown, ArrowRight, MoveUp, Folder } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@ui/lib/utils'
 import { menuCacheOperations } from '@actions/menu'
@@ -186,6 +187,7 @@ interface MenuEditorProps {
 }
 
 export default function MenuEditor({ menu }: MenuEditorProps) {
+  const router = useRouter()
   const [items, setItems] = useState<MenuItemWithChildren[]>(menu.items)
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItemWithChildren | null>(null)
@@ -508,6 +510,9 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
 
       await menuCacheOperations.updateMenuItemsOrder({ items: orderUpdates })
       toast.success('ترتیب منو با موفقیت ذخیره شد')
+      
+      // Refresh the page to get updated data from server
+      router.refresh()
     } catch (error) {
       toast.error('خطا در ذخیره ترتیب منو')
     } finally {
@@ -674,6 +679,7 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
               editingItem={editingItem}
               onItemCreated={handleItemCreated}
               onItemUpdated={handleItemUpdated}
+              onItemDeleted={handleItemDeleted}
               onClose={() => {
                 setShowForm(false)
                 setEditingItem(null)

@@ -1,6 +1,6 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import { db } from "@db"
 import { menus, menuItems } from "@db/schema"
 import { withAdmin } from "@actions/utils"
@@ -141,7 +141,52 @@ export async function updateMenuItemsOrder(data: UpdateMenuItemsOrderData) {
     // Validate input data
     const validatedData = updateMenuItemsOrderSchema.parse(data)
     
-    // Update each item's order and parent
+    if (validatedData.items.length === 0) {
+      throw new Error("لیست آیتم‌ها نمی‌تواند خالی باشد")
+    }
+
+    // Get menu ID from the first item and verify ownership
+    const [firstItem] = await db
+      .select({ 
+        menuId: menuItems.menuId,
+        userId: menus.userId 
+      })
+      .from(menuItems)
+      .innerJoin(menus, eq(menuItems.menuId, menus.id))
+      .where(eq(menuItems.id, validatedData.items[0].id))
+      .limit(1)
+
+    if (!firstItem) {
+      throw new Error("آیتم منو پیدا نشد")
+    }
+
+    if (firstItem.userId !== user.id) {
+      throw new Error("دسترسی غیرمجاز")
+    }
+
+    const menuId = firstItem.menuId
+
+    // Get all current items for this menu
+    const currentItems = await db
+      .select({ id: menuItems.id })
+      .from(menuItems)
+      .where(eq(menuItems.menuId, menuId))
+
+    // Find items to delete (exist in DB but not in new state)
+    const newItemIds = new Set(validatedData.items.map(item => item.id))
+    const itemsToDelete = currentItems
+      .filter(item => !newItemIds.has(item.id))
+      .map(item => item.id)
+
+    // Perform operations sequentially (Neon HTTP doesn't support transactions)
+    // Delete items that are no longer in the new state
+    if (itemsToDelete.length > 0) {
+      await db
+        .delete(menuItems)
+        .where(inArray(menuItems.id, itemsToDelete))
+    }
+
+    // Update remaining items
     const updatePromises = validatedData.items.map(async (item) => {
       return db
         .update(menuItems)
@@ -154,15 +199,18 @@ export async function updateMenuItemsOrder(data: UpdateMenuItemsOrderData) {
         .returning()
     })
 
-    const results = await Promise.all(updatePromises)
-    const updatedItems = results.flat()
+    await Promise.all(updatePromises)
 
-    // Get the menu ID from the first item to invalidate cache
-    if (updatedItems.length > 0) {
-      menuCacheInvalidation.invalidateMenuAndRelated(updatedItems[0].menuId)
-    }
+    // Invalidate cache
+    menuCacheInvalidation.invalidateMenuAndRelated(menuId)
 
-    return updatedItems
+    // Return the updated items (excluding deleted ones)
+    const finalItems = await db
+      .select()
+      .from(menuItems)
+      .where(eq(menuItems.menuId, menuId))
+
+    return finalItems
   })
 }
 

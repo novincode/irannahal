@@ -10,13 +10,16 @@ export const metadata: Metadata = {
 }
 
 interface ProductsPageProps {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  // Await searchParams first
+  const params = await searchParams
+  
   // Convert Next.js searchParams to URLSearchParams
   const urlSearchParams = new URLSearchParams()
-  Object.entries(searchParams).forEach(([key, value]) => {
+  Object.entries(params).forEach(([key, value]) => {
     if (value) {
       const valueStr = Array.isArray(value) ? value[0] : value
       urlSearchParams.set(key, valueStr)
