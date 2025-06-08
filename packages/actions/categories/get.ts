@@ -15,6 +15,17 @@ export async function getCategory<TWith extends CategoryRelations>(
   return category as unknown as CategoryWithDynamicRelations<TWith> | null
 }
 
+export async function getCategoryBySlug<TWith extends CategoryRelations>(
+  slug: string,
+  opts?: { with?: TWith }
+): Promise<CategoryWithDynamicRelations<TWith> | null> {
+  const category = await db.query.categories.findFirst({
+    where: eq(categories.slug, slug),
+    with: opts?.with,
+  })
+  return category as unknown as CategoryWithDynamicRelations<TWith> | null
+}
+
 export async function getCategories<TWith extends CategoryRelations>(
   opts?: { with?: TWith }
 ): Promise<CategoryWithDynamicRelations<TWith>[]> {

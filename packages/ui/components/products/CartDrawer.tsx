@@ -30,7 +30,7 @@ export function CartDrawer() {
       direction="right"
     >
       <DrawerContent className="w-[400px] sm:w-[450px]">
-        <DrawerHeader className="flex flex-row items-center justify-between border-b">
+        <DrawerHeader className="flex flex-row items-center justify-between ">
           <DrawerTitle className="text-lg font-semibold">
             سبد خرید ({totalItems} کالا)
           </DrawerTitle>

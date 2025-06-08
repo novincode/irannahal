@@ -1,9 +1,9 @@
 import React from 'react'
-import { Button } from '@shadcn/button'
+import { Button } from '@ui/components/ui/button'
 import Logo from '@ui/components/shared/Logo'
 import HeroSlider from '@ui/components/sections/HeroSlider'
 import ProductsList from '@ui/components/products/ProductsList'
-import { getProducts } from '@packages/actions/products/get'
+import { getProducts } from '@actions/products/get'
 
 
 const page = async () => {

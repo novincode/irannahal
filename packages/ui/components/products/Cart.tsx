@@ -64,7 +64,7 @@ export function Cart() {
       ) : (
         <>
           {/* Cart Items */}
-          <ScrollArea className="h-[400px] border rounded-lg">
+          <ScrollArea className="h-[400px]  rounded-lg">
             <div className="divide-y">
               {items.map((item) => (
                 <CartSingle
@@ -77,7 +77,7 @@ export function Cart() {
             </div>
           </ScrollArea>
           {/* Footer Summary */}
-          <div className="space-y-4 p-4 bg-muted/20 rounded-lg border mt-auto">
+          <div className="space-y-4 p-4 bg-muted/20 rounded-lg  mt-auto">
             <div className="flex items-center justify-between text-lg">
               <span className="font-medium">مجموع کل:</span>
               <span className="font-bold text-xl text-primary">

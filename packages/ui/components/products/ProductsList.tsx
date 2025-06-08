@@ -5,7 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/react"
 import { Navigation, Pagination, Autoplay, Grid } from "swiper/modules"
 import type { SwiperOptions } from 'swiper/types'
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "@shadcn/button"
+import { Button } from "@ui/components/ui/button"
 import "swiper/css"
 import "swiper/css/navigation"
 import "swiper/css/pagination"
