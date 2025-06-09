@@ -11,6 +11,7 @@ import { Loader2, Settings } from "lucide-react"
 import { toast } from "sonner"
 import { getGeneralSettings, updateGeneralSettings } from "@actions/settings"
 import { generalSettingsFormSchema, type GeneralSettingsFormInput } from "@actions/settings/formSchema"
+import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
 
 export default function GeneralSettingsForm() {
   const [loading, setLoading] = useState(false)
@@ -19,10 +20,10 @@ export default function GeneralSettingsForm() {
   const form = useForm<GeneralSettingsFormInput>({
     resolver: zodResolver(generalSettingsFormSchema),
     defaultValues: {
-      maintenanceMode: false,
-      registrationEnabled: true,
-      guestCheckout: true,
-      inventoryTracking: true
+      maintenanceMode: getDefaultSetting(SETTING_KEYS.GENERAL_MAINTENANCE_MODE) === "true",
+      registrationEnabled: getDefaultSetting(SETTING_KEYS.GENERAL_REGISTRATION_ENABLED) === "true",
+      guestCheckout: getDefaultSetting(SETTING_KEYS.GENERAL_GUEST_CHECKOUT) === "true",
+      inventoryTracking: getDefaultSetting(SETTING_KEYS.GENERAL_INVENTORY_TRACKING) === "true"
     }
   })
 

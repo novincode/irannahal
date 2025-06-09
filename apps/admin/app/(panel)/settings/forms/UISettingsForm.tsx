@@ -5,61 +5,67 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@shadcn/button"
 import { Input } from "@shadcn/input"
-import { Label } from "@shadcn/label"
-import { Textarea } from "@shadcn/textarea"
-import { Switch } from "@shadcn/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shadcn/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shadcn/card"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, Palette } from "lucide-react"
 import { toast } from "sonner"
-import { getUISettings, updateUISettings } from "@actions/settings"
+import { updateUISettings } from "@actions/settings"
 import { uiSettingsFormSchema, type UISettingsFormInput } from "@actions/settings/formSchema"
+import { useSettingsStore } from "@data/useSettingsStore"
+import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
 
 export function UISettingsForm() {
   const [loading, setLoading] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true)
+  
+  const { 
+    settings, 
+    getSetting, 
+    getSettingWithDefault, 
+    initialized, 
+    isLoading: settingsLoading,
+    fetchSettings,
+    invalidateCache
+  } = useSettingsStore()
 
   const form = useForm<UISettingsFormInput>({
     resolver: zodResolver(uiSettingsFormSchema),
     defaultValues: {
-      theme: "light",
-      primaryColor: "#3b82f6",
-      secondaryColor: "",
-      headerStyle: "modern",
-      footerStyle: "detailed", 
-      homepageLayout: "grid"
+      theme: getDefaultSetting(SETTING_KEYS.UI_THEME) as "light" | "dark" | "auto",
+      primaryColor: getDefaultSetting(SETTING_KEYS.UI_PRIMARY_COLOR),
+      secondaryColor: getDefaultSetting(SETTING_KEYS.UI_SECONDARY_COLOR),
+      headerStyle: getDefaultSetting(SETTING_KEYS.UI_HEADER_STYLE) as "minimal" | "classic" | "modern",
+      footerStyle: getDefaultSetting(SETTING_KEYS.UI_FOOTER_STYLE) as "minimal" | "detailed" | "extended", 
+      homepageLayout: getDefaultSetting(SETTING_KEYS.UI_HOMEPAGE_LAYOUT) as "grid" | "list" | "masonry"
     }
   })
 
+  // Initialize settings
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await getUISettings()
-        
-        form.reset({
-          theme: (settings["ui.theme"] as "light" | "dark" | "auto") || "light",
-          primaryColor: settings["ui.primary_color"] || "#3b82f6",
-          secondaryColor: settings["ui.secondary_color"] || "",
-          headerStyle: (settings["ui.header_style"] as "minimal" | "classic" | "modern") || "modern", 
-          footerStyle: (settings["ui.footer_style"] as "minimal" | "detailed" | "extended") || "detailed",
-          homepageLayout: (settings["ui.homepage_layout"] as "grid" | "list" | "masonry") || "grid"
-        })
-      } catch (error) {
-        console.error("خطا در بارگذاری تنظیمات:", error)
-        toast.error("خطا در بارگذاری تنظیمات")
-      } finally {
-        setInitialLoading(false)
-      }
+    if (!initialized && !settingsLoading) {
+      fetchSettings()
     }
+  }, [initialized, settingsLoading, fetchSettings])
 
-    loadSettings()
-  }, [form])
+  // Load settings into form when settings are loaded
+  useEffect(() => {
+    if (initialized && Object.keys(settings).length > 0) {
+      form.reset({
+        theme: (getSettingWithDefault(SETTING_KEYS.UI_THEME) as "light" | "dark" | "auto"),
+        primaryColor: getSettingWithDefault(SETTING_KEYS.UI_PRIMARY_COLOR),
+        secondaryColor: getSettingWithDefault(SETTING_KEYS.UI_SECONDARY_COLOR),
+        headerStyle: (getSettingWithDefault(SETTING_KEYS.UI_HEADER_STYLE) as "minimal" | "classic" | "modern"),
+        footerStyle: (getSettingWithDefault(SETTING_KEYS.UI_FOOTER_STYLE) as "minimal" | "detailed" | "extended"),
+        homepageLayout: (getSettingWithDefault(SETTING_KEYS.UI_HOMEPAGE_LAYOUT) as "grid" | "list" | "masonry")
+      })
+    }
+  }, [initialized, settings, getSettingWithDefault, form])
 
   const onSubmit = async (data: UISettingsFormInput) => {
     setLoading(true)
     try {
       await updateUISettings(data)
+      invalidateCache() // Invalidate cache to refresh settings
       toast.success("تنظیمات رابط کاربری با موفقیت ذخیره شد")
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
@@ -69,13 +75,12 @@ export function UISettingsForm() {
     }
   }
 
-  if (initialLoading) {
+  if (!initialized) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-6">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="mr-2">در حال بارگذاری...</span>
+      </div>
     )
   }
 

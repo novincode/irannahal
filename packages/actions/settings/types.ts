@@ -207,16 +207,41 @@ export const DEFAULT_SETTINGS: Partial<Record<SettingKey, string>> = {
   [SETTING_KEYS.SITE_LANGUAGE]: 'fa',
   [SETTING_KEYS.SITE_TIMEZONE]: 'Asia/Tehran',
   [SETTING_KEYS.SITE_CURRENCY]: 'IRR',
+  [SETTING_KEYS.SITE_LOGO]: '',
+  [SETTING_KEYS.SITE_FAVICON]: '',
   [SETTING_KEYS.UI_THEME]: 'light',
   [SETTING_KEYS.UI_PRIMARY_COLOR]: '#3b82f6',
+  [SETTING_KEYS.UI_SECONDARY_COLOR]: '',
+  [SETTING_KEYS.UI_HEADER_STYLE]: 'modern',
+  [SETTING_KEYS.UI_FOOTER_STYLE]: 'detailed',
+  [SETTING_KEYS.UI_HOMEPAGE_LAYOUT]: 'grid',
   [SETTING_KEYS.GENERAL_REGISTRATION_ENABLED]: 'true',
   [SETTING_KEYS.GENERAL_GUEST_CHECKOUT]: 'true',
   [SETTING_KEYS.GENERAL_MAINTENANCE_MODE]: 'false',
+  [SETTING_KEYS.GENERAL_INVENTORY_TRACKING]: 'true',
   [SETTING_KEYS.SEO_ROBOTS]: 'index,follow',
+  [SETTING_KEYS.SEO_TITLE]: '',
+  [SETTING_KEYS.SEO_DESCRIPTION]: '',
+  [SETTING_KEYS.SEO_KEYWORDS]: '',
+  [SETTING_KEYS.SEO_GOOGLE_ANALYTICS]: '',
+  [SETTING_KEYS.SEO_GOOGLE_TAG_MANAGER]: '',
   [SETTING_KEYS.SEO_PRODUCTS_TITLE_FORMAT]: '{product_name} | {site_title}',
   [SETTING_KEYS.SEO_PRODUCTS_DESCRIPTION_FORMAT]: '{product_description}',
   [SETTING_KEYS.SEO_CATEGORIES_TITLE_FORMAT]: '{category_name} | {site_title}',
-  [SETTING_KEYS.SEO_CATEGORIES_DESCRIPTION_FORMAT]: 'محصولات {category_name} در {site_title}'
+  [SETTING_KEYS.SEO_CATEGORIES_DESCRIPTION_FORMAT]: 'محصولات {category_name} در {site_title}',
+  [SETTING_KEYS.EMAIL_FROM_NAME]: '',
+  [SETTING_KEYS.EMAIL_FROM_ADDRESS]: '',
+  [SETTING_KEYS.EMAIL_SMTP_HOST]: '',
+  [SETTING_KEYS.EMAIL_SMTP_PORT]: '587',
+  [SETTING_KEYS.EMAIL_SMTP_USER]: '',
+  [SETTING_KEYS.EMAIL_SMTP_PASSWORD]: '',
+  [SETTING_KEYS.EMAIL_SMTP_SECURE]: 'false',
+  [SETTING_KEYS.PAYMENT_CURRENCY]: 'IRR',
+  [SETTING_KEYS.PAYMENT_TAX_RATE]: '0',
+  [SETTING_KEYS.PAYMENT_ENABLED_METHODS]: '["bank_transfer"]',
+  [SETTING_KEYS.SHIPPING_ENABLED]: 'true',
+  [SETTING_KEYS.SHIPPING_FREE_THRESHOLD]: '0',
+  [SETTING_KEYS.SHIPPING_DEFAULT_COST]: '0'
 }
 
 // ==========================================
@@ -244,3 +269,25 @@ export const SETTING_VALIDATION_RULES: Partial<Record<SettingKey, SettingValidat
   [SETTING_KEYS.GENERAL_MAINTENANCE_MODE]: { type: 'boolean' },
   [SETTING_KEYS.GENERAL_REGISTRATION_ENABLED]: { type: 'boolean' }
 }
+
+// ==========================================
+// UTILITY FUNCTIONS
+// ==========================================
+
+/**
+ * Get the default value for a setting key
+ * This ensures consistent default values across the application
+ */
+export function getDefaultSetting(key: SettingKey): string {
+  return DEFAULT_SETTINGS[key] || ''
+}
+
+/**
+ * Get setting with default fallback
+ * This is the recommended way to get setting values with defaults
+ */
+export function getSettingWithDefault(settings: FlatSettings, key: SettingKey): string {
+  return settings[key] || getDefaultSetting(key)
+}
+
+// ==========================================

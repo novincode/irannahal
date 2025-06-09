@@ -6,7 +6,7 @@ import { SETTING_KEYS } from '@actions/settings/types'
 
 const Logo = () => {
     const { getSettingWithDefault } = useSettingsStore()
-    const siteTitle = getSettingWithDefault(SETTING_KEYS.SITE_TITLE, 'نهال تو')
+    const siteTitle = getSettingWithDefault(SETTING_KEYS.SITE_TITLE)
     
     return (
         <Link href={'/'}>

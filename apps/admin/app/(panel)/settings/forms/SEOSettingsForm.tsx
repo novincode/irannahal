@@ -29,70 +29,79 @@ import {
   seoSettingsFormSchema, 
   type SEOSettingsFormInput 
 } from "@actions/settings/formSchema"
-import { getPublicSettings, updateSEOSettings } from "@actions/settings"
+import { updateSEOSettings } from "@actions/settings"
+import { SETTING_KEYS, getDefaultSetting } from "@actions/settings/types"
+import { useSettingsStore } from "@data/useSettingsStore"
 
 export function SEOSettingsForm() {
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingData, setIsLoadingData] = useState(true)
+  
+  const { 
+    settings, 
+    getSetting, 
+    getSettingWithDefault, 
+    initialized, 
+    isLoading: settingsLoading,
+    fetchSettings,
+    invalidateCache
+  } = useSettingsStore()
 
   const form = useForm<SEOSettingsFormInput>({
     resolver: zodResolver(seoSettingsFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      keywords: "",
-      robots: "index,follow",
-      googleAnalytics: "",
-      googleTagManager: "",
-      productsTitle: "{{product_name}} | {{site_title}}",
-      productsDescription: "{{product_description}}",
-      categoriesTitle: "{{category_name}} | {{site_title}}",
-      categoriesDescription: "محصولات دسته‌بندی {{category_name}}"
+      title: getDefaultSetting(SETTING_KEYS.SEO_TITLE),
+      description: getDefaultSetting(SETTING_KEYS.SEO_DESCRIPTION),
+      keywords: getDefaultSetting(SETTING_KEYS.SEO_KEYWORDS),
+      robots: getDefaultSetting(SETTING_KEYS.SEO_ROBOTS),
+      googleAnalytics: getDefaultSetting(SETTING_KEYS.SEO_GOOGLE_ANALYTICS),
+      googleTagManager: getDefaultSetting(SETTING_KEYS.SEO_GOOGLE_TAG_MANAGER),
+      productsTitle: getDefaultSetting(SETTING_KEYS.SEO_PRODUCTS_TITLE_FORMAT),
+      productsDescription: getDefaultSetting(SETTING_KEYS.SEO_PRODUCTS_DESCRIPTION_FORMAT),
+      categoriesTitle: getDefaultSetting(SETTING_KEYS.SEO_CATEGORIES_TITLE_FORMAT),
+      categoriesDescription: getDefaultSetting(SETTING_KEYS.SEO_CATEGORIES_DESCRIPTION_FORMAT)
     }
   })
 
+  // Initialize settings
   useEffect(() => {
-    async function loadSettings() {
-      try {
-        const settings = await getPublicSettings()
-        
-        form.reset({
-          title: settings["seo.title"] || "",
-          description: settings["seo.description"] || "",
-          keywords: settings["seo.keywords"] || "",
-          robots: settings["seo.robots"] || "index,follow",
-          googleAnalytics: settings["seo.google_analytics"] || "",
-          googleTagManager: settings["seo.google_tag_manager"] || "",
-          productsTitle: settings["seo.products_title_format"] || "{{product_name}} | {{site_title}}",
-          productsDescription: settings["seo.products_description_format"] || "{{product_description}}",
-          categoriesTitle: settings["seo.categories_title_format"] || "{{category_name}} | {{site_title}}",
-          categoriesDescription: settings["seo.categories_description_format"] || "محصولات دسته‌بندی {{category_name}}"
-        })
-      } catch (error) {
-        console.error("خطا در بارگذاری تنظیمات SEO:", error)
-        toast.error("خطا در بارگذاری تنظیمات SEO")
-      } finally {
-        setIsLoadingData(false)
-      }
+    if (!initialized && !settingsLoading) {
+      fetchSettings()
     }
+  }, [initialized, settingsLoading, fetchSettings])
 
-    loadSettings()
-  }, [form])
+  // Load settings into form when settings are loaded
+  useEffect(() => {
+    if (initialized && Object.keys(settings).length > 0) {
+      form.reset({
+        title: getSettingWithDefault(SETTING_KEYS.SEO_TITLE),
+        description: getSettingWithDefault(SETTING_KEYS.SEO_DESCRIPTION),
+        keywords: getSettingWithDefault(SETTING_KEYS.SEO_KEYWORDS),
+        robots: getSettingWithDefault(SETTING_KEYS.SEO_ROBOTS),
+        googleAnalytics: getSettingWithDefault(SETTING_KEYS.SEO_GOOGLE_ANALYTICS),
+        googleTagManager: getSettingWithDefault(SETTING_KEYS.SEO_GOOGLE_TAG_MANAGER),
+        productsTitle: getSettingWithDefault(SETTING_KEYS.SEO_PRODUCTS_TITLE_FORMAT),
+        productsDescription: getSettingWithDefault(SETTING_KEYS.SEO_PRODUCTS_DESCRIPTION_FORMAT),
+        categoriesTitle: getSettingWithDefault(SETTING_KEYS.SEO_CATEGORIES_TITLE_FORMAT),
+        categoriesDescription: getSettingWithDefault(SETTING_KEYS.SEO_CATEGORIES_DESCRIPTION_FORMAT)
+      })
+    }
+  }, [initialized, settings, getSettingWithDefault, form])
 
   async function onSubmit(data: SEOSettingsFormInput) {
     setIsLoading(true)
     try {
       await updateSEOSettings(data)
-      toast.success("تنظیمات SEO با موفقیت ذخیره شد")
+      invalidateCache() // Invalidate cache to refresh settings
+      toast.success("تنظیمات سئو با موفقیت ذخیره شد")
     } catch (error) {
-      console.error("خطا در ذخیره تنظیمات SEO:", error)
-      toast.error("خطا در ذخیره تنظیمات SEO")
+      console.error("Error updating SEO settings:", error)
+      toast.error("خطا در ذخیره تنظیمات سئو")
     } finally {
       setIsLoading(false)
     }
   }
 
-  if (isLoadingData) {
+  if (!initialized) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin" />

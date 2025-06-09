@@ -10,42 +10,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shad
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
-import { getShippingSettings, updateShippingSettings } from "@actions/settings"
+import { updateShippingSettings } from "@actions/settings"
 import { shippingSettingsFormSchema, type ShippingSettingsFormInput } from "@actions/settings/formSchema"
+import { useSettingsStore } from "@data/useSettingsStore"
+import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
 
 export default function ShippingSettingsForm() {
   const [loading, setLoading] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true)
+  
+  const { 
+    settings, 
+    getSetting, 
+    getSettingWithDefault, 
+    initialized, 
+    isLoading: settingsLoading,
+    fetchSettings,
+    invalidateCache
+  } = useSettingsStore()
 
   const form = useForm<ShippingSettingsFormInput>({
     resolver: zodResolver(shippingSettingsFormSchema),
     defaultValues: {
-      enabled: true,
-      freeThreshold: 0,
-      defaultCost: 0
+      enabled: getDefaultSetting(SETTING_KEYS.SHIPPING_ENABLED) === "true",
+      freeThreshold: parseFloat(getDefaultSetting(SETTING_KEYS.SHIPPING_FREE_THRESHOLD) || "0"),
+      defaultCost: parseFloat(getDefaultSetting(SETTING_KEYS.SHIPPING_DEFAULT_COST) || "0")
     }
   })
 
+  // Initialize settings
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await getShippingSettings()
-        
-        form.reset({
-          enabled: settings["shipping.enabled"] === "true",
-          freeThreshold: parseFloat(settings["shipping.free_threshold"] || "0"),
-          defaultCost: parseFloat(settings["shipping.default_cost"] || "0")
-        })
-      } catch (error) {
-        console.error("خطا در بارگذاری تنظیمات:", error)
-        toast.error("خطا در بارگذاری تنظیمات")
-      } finally {
-        setInitialLoading(false)
-      }
+    if (!initialized && !settingsLoading) {
+      fetchSettings()
     }
+  }, [initialized, settingsLoading, fetchSettings])
 
-    loadSettings()
-  }, [form])
+  // Load settings into form when settings are loaded
+  useEffect(() => {
+    if (initialized && Object.keys(settings).length > 0) {
+      form.reset({
+        enabled: getSettingWithDefault(SETTING_KEYS.SHIPPING_ENABLED) === "true",
+        freeThreshold: parseFloat(getSettingWithDefault(SETTING_KEYS.SHIPPING_FREE_THRESHOLD) || "0"),
+        defaultCost: parseFloat(getSettingWithDefault(SETTING_KEYS.SHIPPING_DEFAULT_COST) || "0")
+      })
+    }
+  }, [initialized, settings, getSettingWithDefault, form])
 
   const onSubmit = async (data: ShippingSettingsFormInput) => {
     setLoading(true)
@@ -60,7 +68,7 @@ export default function ShippingSettingsForm() {
     }
   }
 
-  if (initialLoading) {
+  if (settingsLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-6">

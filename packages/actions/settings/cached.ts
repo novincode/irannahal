@@ -2,6 +2,7 @@
 
 import { getPublicSettings } from "./get"
 import { settingsCache, settingsCacheKeys } from "./cacheConfig"
+import { getDefaultSetting, SETTING_KEYS } from "./types"
 
 /**
  * Get cached site information (title, description, logo, etc.)
@@ -13,13 +14,13 @@ export async function getCachedSiteInfo() {
       const settings = await getPublicSettings()
       
       return {
-        title: settings["site.title"] || "نکست کالا",
-        description: settings["site.description"] || "فروشگاه آنلاین نکست کالا", 
-        language: settings["site.language"] || "fa",
-        currency: settings["site.currency"] || "IRR",
-        timezone: settings["site.timezone"] || "Asia/Tehran",
-        logo: settings["site.logo"] || null,
-        favicon: settings["site.favicon"] || null,
+        title: settings[SETTING_KEYS.SITE_TITLE] || getDefaultSetting(SETTING_KEYS.SITE_TITLE),
+        description: settings[SETTING_KEYS.SITE_DESCRIPTION] || getDefaultSetting(SETTING_KEYS.SITE_DESCRIPTION), 
+        language: settings[SETTING_KEYS.SITE_LANGUAGE] || getDefaultSetting(SETTING_KEYS.SITE_LANGUAGE),
+        currency: settings[SETTING_KEYS.SITE_CURRENCY] || getDefaultSetting(SETTING_KEYS.SITE_CURRENCY),
+        timezone: settings[SETTING_KEYS.SITE_TIMEZONE] || getDefaultSetting(SETTING_KEYS.SITE_TIMEZONE),
+        logo: settings[SETTING_KEYS.SITE_LOGO] || getDefaultSetting(SETTING_KEYS.SITE_LOGO) || null,
+        favicon: settings[SETTING_KEYS.SITE_FAVICON] || getDefaultSetting(SETTING_KEYS.SITE_FAVICON) || null,
       }
     },
     [settingsCacheKeys.public, settingsCacheKeys.site]
@@ -38,12 +39,12 @@ export async function getCachedUISettings() {
       const settings = await getPublicSettings()
       
       return {
-        theme: settings["ui.theme"] || "light",
-        primaryColor: settings["ui.primary_color"] || "#3b82f6",
-        secondaryColor: settings["ui.secondary_color"] || "",
-        headerStyle: settings["ui.header_style"] || "modern",
-        footerStyle: settings["ui.footer_style"] || "detailed",
-        homepageLayout: settings["ui.homepage_layout"] || "grid",
+        theme: settings[SETTING_KEYS.UI_THEME] || getDefaultSetting(SETTING_KEYS.UI_THEME),
+        primaryColor: settings[SETTING_KEYS.UI_PRIMARY_COLOR] || getDefaultSetting(SETTING_KEYS.UI_PRIMARY_COLOR),
+        secondaryColor: settings[SETTING_KEYS.UI_SECONDARY_COLOR] || getDefaultSetting(SETTING_KEYS.UI_SECONDARY_COLOR),
+        headerStyle: settings[SETTING_KEYS.UI_HEADER_STYLE] || getDefaultSetting(SETTING_KEYS.UI_HEADER_STYLE),
+        footerStyle: settings[SETTING_KEYS.UI_FOOTER_STYLE] || getDefaultSetting(SETTING_KEYS.UI_FOOTER_STYLE),
+        homepageLayout: settings[SETTING_KEYS.UI_HOMEPAGE_LAYOUT] || getDefaultSetting(SETTING_KEYS.UI_HOMEPAGE_LAYOUT),
       }
     },
     [settingsCacheKeys.public, settingsCacheKeys.ui]
@@ -61,12 +62,12 @@ export async function getCachedSEOSettings() {
       const settings = await getPublicSettings()
       
       return {
-        title: settings["seo.title"] || settings["site.title"] || "نکست کالا",
-        description: settings["seo.description"] || settings["site.description"] || "فروشگاه آنلاین نکست کالا",
-        keywords: settings["seo.keywords"] || "",
-        robots: settings["seo.robots"] || "index,follow",
-        googleAnalytics: settings["seo.google_analytics"] || null,
-        googleTagManager: settings["seo.google_tag_manager"] || null,
+        title: settings[SETTING_KEYS.SEO_TITLE] || settings[SETTING_KEYS.SITE_TITLE] || getDefaultSetting(SETTING_KEYS.SEO_TITLE) || getDefaultSetting(SETTING_KEYS.SITE_TITLE),
+        description: settings[SETTING_KEYS.SEO_DESCRIPTION] || settings[SETTING_KEYS.SITE_DESCRIPTION] || getDefaultSetting(SETTING_KEYS.SEO_DESCRIPTION) || getDefaultSetting(SETTING_KEYS.SITE_DESCRIPTION),
+        keywords: settings[SETTING_KEYS.SEO_KEYWORDS] || getDefaultSetting(SETTING_KEYS.SEO_KEYWORDS),
+        robots: settings[SETTING_KEYS.SEO_ROBOTS] || getDefaultSetting(SETTING_KEYS.SEO_ROBOTS),
+        googleAnalytics: settings[SETTING_KEYS.SEO_GOOGLE_ANALYTICS] || getDefaultSetting(SETTING_KEYS.SEO_GOOGLE_ANALYTICS) || null,
+        googleTagManager: settings[SETTING_KEYS.SEO_GOOGLE_TAG_MANAGER] || getDefaultSetting(SETTING_KEYS.SEO_GOOGLE_TAG_MANAGER) || null,
       }
     },
     [settingsCacheKeys.public, settingsCacheKeys.seo]
@@ -97,7 +98,7 @@ export async function getCachedMaintenanceMode(): Promise<boolean> {
   const cachedAction = settingsCache.cacheWith(
     async () => {
       const settings = await getPublicSettings()
-      return settings["general.maintenance_mode"] === "true"
+      return settings[SETTING_KEYS.GENERAL_MAINTENANCE_MODE] === "true"
     },
     [settingsCacheKeys.public, settingsCacheKeys.general]
   )

@@ -1,7 +1,12 @@
 import React from 'react'
 import { Button } from '@shadcn/button'
+import { useSettingsStore } from '@data/useSettingsStore'
+import { SETTING_KEYS } from '@actions/settings/types'
 
 const MainFooter = () => {
+  const { getSettingWithDefault } = useSettingsStore()
+  const siteTitle = getSettingWithDefault(SETTING_KEYS.SITE_TITLE)
+  const siteDescription = getSettingWithDefault(SETTING_KEYS.SITE_DESCRIPTION)
   return (
     <footer className="border-t border-border mt-8 bg-card text-foreground text-sm" dir="rtl">
       <div className="container py-8">
@@ -9,7 +14,7 @@ const MainFooter = () => {
           {/* درباره ما */}
           <div>
             <h3 className="font-bold mb-2">درباره ما</h3>
-            <p className="text-muted-foreground">نهالتو، فروشگاه آنلاین نهال و گیاهان زینتی</p>
+            <p className="text-muted-foreground">{siteDescription}</p>
           </div>
           {/* دسترسی سریع */}
           <div>

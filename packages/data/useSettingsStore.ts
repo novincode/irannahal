@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { getAllSettings } from '@actions/settings';
+import { cachedGetAllSettings } from '@actions/settings';
 import type { FlatSettings, SettingKey } from '@actions/settings/types';
+import { getDefaultSetting } from '@actions/settings/types';
 
 interface SettingsState {
   settings: FlatSettings;
@@ -9,7 +10,9 @@ interface SettingsState {
   initialized: boolean;
   fetchSettings: () => Promise<void>;
   getSetting: (key: SettingKey) => string | null;
-  getSettingWithDefault: (key: SettingKey, defaultValue: string) => string;
+  getSettingWithDefault: (key: SettingKey, fallbackValue?: string) => string;
+  invalidateCache: () => void;
+  refresh: () => Promise<void>;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -20,7 +23,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   fetchSettings: async () => {
     set({ isLoading: true, error: null });
     try {
-      const settings = await getAllSettings();
+      const settings = await cachedGetAllSettings();
       set({ settings, isLoading: false, initialized: true });
     } catch (error) {
       set({ error: error instanceof Error ? error : new Error(String(error)), isLoading: false });
@@ -29,11 +32,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   getSetting: (key: SettingKey) => {
     const state = get();
-    return state.settings[key] || null;
+    return state.settings[key] || getDefaultSetting(key) || null;
   },
-  getSettingWithDefault: (key: SettingKey, defaultValue: string) => {
+  getSettingWithDefault: (key: SettingKey, fallbackValue?: string) => {
     const state = get();
-    return state.settings[key] || defaultValue;
+    return state.settings[key] || getDefaultSetting(key) || fallbackValue || '';
+  },
+  invalidateCache: () => {
+    // Reset the store and refetch settings
+    set({ initialized: false, settings: {} });
+    get().fetchSettings();
+  },
+  refresh: async () => {
+    await get().fetchSettings();
   },
 }));
 

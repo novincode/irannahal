@@ -10,56 +10,65 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shad
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
-import { getEmailSettings, updateEmailSettings } from "@actions/settings"
+import { updateEmailSettings } from "@actions/settings"
 import { emailSettingsFormSchema, type EmailSettingsFormInput } from "@actions/settings/formSchema"
+import { useSettingsStore } from "@data/useSettingsStore"
+import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
 
 export function EmailSettingsForm() {
   const [loading, setLoading] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true)
   const [testingEmail, setTestingEmail] = useState(false)
+
+  const { 
+    settings, 
+    getSetting, 
+    getSettingWithDefault, 
+    initialized, 
+    isLoading: settingsLoading,
+    fetchSettings,
+    invalidateCache
+  } = useSettingsStore()
 
   const form = useForm<EmailSettingsFormInput>({
     resolver: zodResolver(emailSettingsFormSchema),
     defaultValues: {
-      fromName: "",
-      fromAddress: "",
-      smtpHost: "",
-      smtpPort: 587,
-      smtpUser: "",
-      smtpPassword: "",
-      smtpSecure: false
+      fromName: getDefaultSetting(SETTING_KEYS.EMAIL_FROM_NAME),
+      fromAddress: getDefaultSetting(SETTING_KEYS.EMAIL_FROM_ADDRESS),
+      smtpHost: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_HOST),
+      smtpPort: parseInt(getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_PORT) || "587"),
+      smtpUser: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_USER),
+      smtpPassword: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_PASSWORD),
+      smtpSecure: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_SECURE) === "true"
     }
   })
 
+  // Initialize settings
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await getEmailSettings()
-        
-        form.reset({
-          fromName: settings["email.from_name"] || "",
-          fromAddress: settings["email.from_address"] || "",
-          smtpHost: settings["email.smtp_host"] || "",
-          smtpPort: parseInt(settings["email.smtp_port"] || "587"),
-          smtpUser: settings["email.smtp_user"] || "",
-          smtpPassword: settings["email.smtp_password"] || "",
-          smtpSecure: settings["email.smtp_secure"] === "true"
-        })
-      } catch (error) {
-        console.error("خطا در بارگذاری تنظیمات:", error)
-        toast.error("خطا در بارگذاری تنظیمات")
-      } finally {
-        setInitialLoading(false)
-      }
+    if (!initialized && !settingsLoading) {
+      fetchSettings()
     }
+  }, [initialized, settingsLoading, fetchSettings])
 
-    loadSettings()
-  }, [form])
+  // Load settings into form when settings are loaded
+  useEffect(() => {
+    if (initialized && Object.keys(settings).length > 0) {
+      form.reset({
+        fromName: getSettingWithDefault(SETTING_KEYS.EMAIL_FROM_NAME),
+        fromAddress: getSettingWithDefault(SETTING_KEYS.EMAIL_FROM_ADDRESS),
+        smtpHost: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_HOST),
+        smtpPort: parseInt(getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_PORT) || "587"),
+        smtpUser: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_USER),
+        smtpPassword: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_PASSWORD),
+        smtpSecure: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_SECURE) === "true"
+      })
+    }
+  }, [initialized, settings, getSettingWithDefault, form])
 
   const onSubmit = async (data: EmailSettingsFormInput) => {
     setLoading(true)
     try {
       await updateEmailSettings(data)
+      invalidateCache() // Invalidate cache to refresh settings
       toast.success("تنظیمات ایمیل با موفقیت ذخیره شد")
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
@@ -83,13 +92,12 @@ export function EmailSettingsForm() {
     }
   }
 
-  if (initialLoading) {
+  if (!initialized) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-6">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="mr-2">در حال بارگذاری...</span>
+      </div>
     )
   }
 

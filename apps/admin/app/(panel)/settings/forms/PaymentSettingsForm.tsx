@@ -11,8 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shad
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, CreditCard } from "lucide-react"
 import { toast } from "sonner"
-import { getPaymentSettings, updatePaymentSettings } from "@actions/settings"
+import { updatePaymentSettings } from "@actions/settings"
 import { paymentSettingsFormSchema, type PaymentSettingsFormInput } from "@actions/settings/formSchema"
+import { useSettingsStore } from "@data/useSettingsStore"
+import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
 
 const PAYMENT_METHODS = [
   { id: "bank_transfer", label: "انتقال بانکی" },
@@ -23,46 +25,53 @@ const PAYMENT_METHODS = [
 
 export function PaymentSettingsForm() {
   const [loading, setLoading] = useState(false)
-  const [initialLoading, setInitialLoading] = useState(true)
+  
+  const { 
+    settings, 
+    getSetting, 
+    getSettingWithDefault, 
+    initialized, 
+    isLoading: settingsLoading,
+    fetchSettings,
+    invalidateCache
+  } = useSettingsStore()
 
   const form = useForm<PaymentSettingsFormInput>({
     resolver: zodResolver(paymentSettingsFormSchema),
     defaultValues: {
-      currency: "IRR",
-      taxRate: 0,
-      enabledMethods: ["bank_transfer"]
+      currency: getDefaultSetting(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR",
+      taxRate: parseFloat(getDefaultSetting(SETTING_KEYS.PAYMENT_TAX_RATE) || "0"),
+      enabledMethods: JSON.parse(getDefaultSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS) || '["bank_transfer"]')
     }
   })
 
+  // Initialize settings
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settings = await getPaymentSettings()
-        
-        const enabledMethods = settings["payment.enabled_methods"] 
-          ? JSON.parse(settings["payment.enabled_methods"]) 
-          : ["bank_transfer"]
-        
-        form.reset({
-          currency: (settings["payment.currency"] as "IRR" | "USD" | "EUR") || "IRR",
-          taxRate: parseFloat(settings["payment.tax_rate"] || "0"),
-          enabledMethods: enabledMethods
-        })
-      } catch (error) {
-        console.error("خطا در بارگذاری تنظیمات:", error)
-        toast.error("خطا در بارگذاری تنظیمات")
-      } finally {
-        setInitialLoading(false)
-      }
+    if (!initialized && !settingsLoading) {
+      fetchSettings()
     }
+  }, [initialized, settingsLoading, fetchSettings])
 
-    loadSettings()
-  }, [form])
+  // Load settings into form when settings are loaded
+  useEffect(() => {
+    if (initialized && Object.keys(settings).length > 0) {
+      const enabledMethods = getSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS)
+        ? JSON.parse(getSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS) as string)
+        : JSON.parse(getDefaultSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS) || '["bank_transfer"]')
+      
+      form.reset({
+        currency: (getSettingWithDefault(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR"),
+        taxRate: parseFloat(getSettingWithDefault(SETTING_KEYS.PAYMENT_TAX_RATE) || "0"),
+        enabledMethods: enabledMethods
+      })
+    }
+  }, [initialized, settings, getSetting, getSettingWithDefault, form])
 
   const onSubmit = async (data: PaymentSettingsFormInput) => {
     setLoading(true)
     try {
       await updatePaymentSettings(data)
+      invalidateCache() // Invalidate cache to refresh settings
       toast.success("تنظیمات پرداخت با موفقیت ذخیره شد")
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
@@ -72,13 +81,12 @@ export function PaymentSettingsForm() {
     }
   }
 
-  if (initialLoading) {
+  if (!initialized) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-6">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="mr-2">در حال بارگذاری...</span>
+      </div>
     )
   }
 

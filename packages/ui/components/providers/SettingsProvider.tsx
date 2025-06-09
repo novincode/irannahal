@@ -4,6 +4,8 @@ import { useSettingsStore } from '@data/useSettingsStore'
 
 interface SettingsProviderProps {
   children: ReactNode
+  fallback?: ReactNode
+  errorFallback?: ReactNode
 }
 
 /**
@@ -12,7 +14,11 @@ interface SettingsProviderProps {
  * 
  * Usage: Wrap your app root component with this provider
  */
-export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
+export const SettingsProvider: React.FC<SettingsProviderProps> = ({ 
+  children, 
+  fallback,
+  errorFallback 
+}) => {
   const { fetchSettings, initialized, isLoading, error } = useSettingsStore()
 
   useEffect(() => {
@@ -24,10 +30,20 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     }
   }, [fetchSettings, initialized, isLoading])
 
-  // Optional: You can add a loading state or error handling here
+  // Show error fallback if there's an error
+  if (error && errorFallback) {
+    console.error('Settings initialization error:', error)
+    return <>{errorFallback}</>
+  }
+
+  // Show loading fallback while initializing
+  if (!initialized && isLoading && fallback) {
+    return <>{fallback}</>
+  }
+
+  // Log error but don't block rendering if no error fallback provided
   if (error) {
     console.error('Settings initialization error:', error)
-    // You could show an error boundary or fallback UI here
   }
 
   return <>{children}</>

@@ -34,9 +34,9 @@ const MainHeader = () => {
   }, [initialized, settingsLoading, fetchSettings])
 
   // Get site settings for header customization
-  const siteTitle = getSettingWithDefault(SETTING_KEYS.SITE_TITLE, 'نهال تو')
-  const headerStyle = getSetting(SETTING_KEYS.UI_HEADER_STYLE) || 'modern'
-  const primaryColor = getSetting(SETTING_KEYS.UI_PRIMARY_COLOR) || '#3b82f6'
+  const siteTitle = getSettingWithDefault(SETTING_KEYS.SITE_TITLE)
+  const headerStyle = getSettingWithDefault(SETTING_KEYS.UI_HEADER_STYLE)
+  const primaryColor = getSettingWithDefault(SETTING_KEYS.UI_PRIMARY_COLOR)
 
   return (
     <header 

@@ -30,45 +30,64 @@ import {
   siteSettingsFormSchema, 
   type SiteSettingsFormInput 
 } from "@actions/settings/formSchema"
+import { updateSiteSettings } from "@actions/settings"
 import { useSettingsStore } from "@data/useSettingsStore"
+import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
 
 export function SiteSettingsForm() {
   const [isLoading, setIsLoading] = useState(false)
   
-  const { settings, getSetting, updateSiteSettings: updateSettings, isLoaded } = useSettingsStore()
+  const { 
+    settings, 
+    getSetting, 
+    getSettingWithDefault, 
+    initialized, 
+    isLoading: settingsLoading,
+    fetchSettings,
+    invalidateCache
+  } = useSettingsStore()
 
   const form = useForm<SiteSettingsFormInput>({
     resolver: zodResolver(siteSettingsFormSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      language: "fa",
-      timezone: "Asia/Tehran",
-      currency: "IRR",
-      logoId: "",
-      faviconId: ""
+      title: getDefaultSetting(SETTING_KEYS.SITE_TITLE),
+      description: getDefaultSetting(SETTING_KEYS.SITE_DESCRIPTION),
+      language: getDefaultSetting(SETTING_KEYS.SITE_LANGUAGE) as "fa" | "en",
+      timezone: getDefaultSetting(SETTING_KEYS.SITE_TIMEZONE),
+      currency: getDefaultSetting(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR",
+      logoId: getDefaultSetting(SETTING_KEYS.SITE_LOGO),
+      faviconId: getDefaultSetting(SETTING_KEYS.SITE_FAVICON)
     }
   })
 
+  // Initialize settings
+  useEffect(() => {
+    if (!initialized && !settingsLoading) {
+      fetchSettings()
+    }
+  }, [initialized, settingsLoading, fetchSettings])
+
   // Load settings into form when settings are loaded
   useEffect(() => {
-    if (isLoaded && Object.keys(settings).length > 0) {
+    if (initialized && Object.keys(settings).length > 0) {
       form.reset({
-        title: getSetting("site.title", ""),
-        description: getSetting("site.description", ""),
-        language: (getSetting("site.language", "fa") as "fa" | "en"),
-        timezone: getSetting("site.timezone", "Asia/Tehran"), 
-        currency: (getSetting("site.currency", "IRR") as "IRR" | "USD" | "EUR"),
-        logoId: getSetting("site.logo", ""),
-        faviconId: getSetting("site.favicon", "")
+        title: getSettingWithDefault(SETTING_KEYS.SITE_TITLE),
+        description: getSettingWithDefault(SETTING_KEYS.SITE_DESCRIPTION),
+        language: (getSettingWithDefault(SETTING_KEYS.SITE_LANGUAGE) as "fa" | "en"),
+        timezone: getSettingWithDefault(SETTING_KEYS.SITE_TIMEZONE), 
+        currency: (getSettingWithDefault(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR"),
+        logoId: getSettingWithDefault(SETTING_KEYS.SITE_LOGO),
+        faviconId: getSettingWithDefault(SETTING_KEYS.SITE_FAVICON)
       })
     }
-  }, [isLoaded, settings, getSetting, form])
+  }, [initialized, settings, getSettingWithDefault, form])
 
   async function onSubmit(data: SiteSettingsFormInput) {
     setIsLoading(true)
     try {
-      await updateSettings(data)
+      await updateSiteSettings(data)
+      // Invalidate cache to refetch settings
+      invalidateCache()
       toast.success("تنظیمات سایت با موفقیت ذخیره شد")
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
@@ -78,7 +97,7 @@ export function SiteSettingsForm() {
     }
   }
 
-  if (!isLoaded) {
+  if (!initialized) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin" />
