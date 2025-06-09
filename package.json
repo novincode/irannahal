@@ -15,7 +15,12 @@
     "db:reset": "tsx scripts/reset-db.ts",
     "db:check": "tsx scripts/db-check.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
-    "db": "pnpm run db:migrate"
+    "db": "pnpm run db:migrate",
+    "seed": "tsx scripts/seed-db.ts",
+    "seed:settings": "tsx scripts/seed-db.ts --settings",
+    "seed:enhanced": "tsx scripts/seed-db.ts --enhanced",
+    "seed:ensure": "tsx scripts/seed-db.ts --ensure",
+    "seed:force": "tsx scripts/seed-db.ts --force-settings"
   },
   "packageManager": "pnpm@8.15.4",
   "dependencies": {

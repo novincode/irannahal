@@ -36,16 +36,16 @@ const items = [
       { title: "برچسب‌ها", url: "tags", icon: Tag },
     ],
   },
-  {
-    title: "پست ها",
-    icon: Package,
-    url: "posts",
-    children: [
-      { title: "لیست پست ها", url: "posts", icon: Package },
-      { title: "افزودن پست", url: "posts/new", icon: Package },
-      { title: "دسته‌بندی‌ها", url: "categories", icon: BarChart2 },
-    ],
-  },
+  // {
+  //   title: "پست ها",
+  //   icon: Package,
+  //   url: "posts",
+  //   children: [
+  //     { title: "لیست پست ها", url: "posts", icon: Package },
+  //     { title: "افزودن پست", url: "posts/new", icon: Package },
+  //     { title: "دسته‌بندی‌ها", url: "categories", icon: BarChart2 },
+  //   ],
+  // },
    {
     title: "رسانه ها",
     icon: Package,

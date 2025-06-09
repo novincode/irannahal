@@ -1,6 +1,7 @@
 
 import { IranSansXClassName } from "@ui/fonts/fonts";
 import { ThemeProvider } from "@ui/components/providers/ThemeProvider"
+import { SettingsProvider } from "@ui/components/providers/SettingsProvider"
 import { SessionProvider } from "next-auth/react"
 import { auth } from "@auth";
 import { Toaster } from "@shadcn/sonner"
@@ -20,16 +21,17 @@ export default async function RootLayout({
         className={`${IranSansXClassName} antialiased`}
       >
         <SessionProvider session={session}>
-          
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster richColors />
-          </ThemeProvider>
+          <SettingsProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <Toaster richColors />
+            </ThemeProvider>
+          </SettingsProvider>
         </SessionProvider>
       </body>
     </html>

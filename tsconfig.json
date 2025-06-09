@@ -40,6 +40,9 @@
       "@data/*": [
         "packages/data/*"
       ],
+      "@data": [
+        "packages/data"
+      ],
       "@db": [
         "packages/db/index"
       ],
