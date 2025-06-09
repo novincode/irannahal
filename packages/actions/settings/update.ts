@@ -25,7 +25,7 @@ import {
   type GeneralSettingsFormInput
 } from "./formSchema"
 import { settingsCacheInvalidation } from "./cacheConfig"
-import { SETTING_KEYS, DEFAULT_SETTINGS } from "./types"
+import { DEFAULT_SETTINGS } from "./types"
 
 // ==========================================
 // SINGLE SETTING UPDATE
@@ -147,24 +147,29 @@ export async function updateSettings(data: UpdateSettingsData) {
 // SITE SETTINGS UPDATE
 // ==========================================
 
-export async function updateSiteSettings(data: SiteSettingsFormInput) {
+export async function updateSiteSettings(data: SiteSettingsFormInput, keys: Record<string, string>) {
   return withAdmin(async (user) => {
     // Validate input data
     const validatedData = siteSettingsFormSchema.parse(data)
     
-    // Convert form data to setting updates
+    // Convert form data to setting updates using provided keys
     const settingsToUpdate: UpdateSettingData[] = [
-      { key: SETTING_KEYS.SITE_TITLE, value: validatedData.title },
-      { key: SETTING_KEYS.SITE_DESCRIPTION, value: validatedData.description || null },
-      { key: SETTING_KEYS.SITE_LANGUAGE, value: validatedData.language },
-      { key: SETTING_KEYS.SITE_TIMEZONE, value: validatedData.timezone },
-      { key: SETTING_KEYS.SITE_CURRENCY, value: validatedData.currency },
-      { key: SETTING_KEYS.SITE_LOGO, value: validatedData.logoId || null },
-      { key: SETTING_KEYS.SITE_FAVICON, value: validatedData.faviconId || null }
+      { key: keys.SITE_TITLE, value: validatedData.title },
+      { key: keys.SITE_DESCRIPTION, value: validatedData.description || null },
+      { key: keys.SITE_LANGUAGE, value: validatedData.language },
+      { key: keys.SITE_TIMEZONE, value: validatedData.timezone },
+      { key: keys.SITE_CURRENCY, value: validatedData.currency },
+      { key: keys.SITE_LOGO, value: validatedData.logoId || null },
+      { key: keys.SITE_FAVICON, value: validatedData.faviconId || null }
     ]
 
     // Update settings
-    return await updateSettings({ settings: settingsToUpdate })
+    const result = await updateSettings({ settings: settingsToUpdate })
+    
+    // Extra cache invalidation for site settings
+    settingsCacheInvalidation.invalidateAll()
+    
+    return result
   })
 }
 
@@ -172,23 +177,23 @@ export async function updateSiteSettings(data: SiteSettingsFormInput) {
 // SEO SETTINGS UPDATE
 // ==========================================
 
-export async function updateSEOSettings(data: SEOSettingsFormInput) {
+export async function updateSEOSettings(data: SEOSettingsFormInput, keys: Record<string, string>) {
   return withAdmin(async (user) => {
     // Validate input data
     const validatedData = seoSettingsFormSchema.parse(data)
     
-    // Convert form data to setting updates
+    // Convert form data to setting updates using provided keys
     const settingsToUpdate: UpdateSettingData[] = [
-      { key: SETTING_KEYS.SEO_TITLE, value: validatedData.title || null },
-      { key: SETTING_KEYS.SEO_DESCRIPTION, value: validatedData.description || null },
-      { key: SETTING_KEYS.SEO_KEYWORDS, value: validatedData.keywords || null },
-      { key: SETTING_KEYS.SEO_ROBOTS, value: validatedData.robots },
-      { key: SETTING_KEYS.SEO_GOOGLE_ANALYTICS, value: validatedData.googleAnalytics || null },
-      { key: SETTING_KEYS.SEO_GOOGLE_TAG_MANAGER, value: validatedData.googleTagManager || null },
-      { key: SETTING_KEYS.SEO_PRODUCTS_TITLE_FORMAT, value: validatedData.productsTitle },
-      { key: SETTING_KEYS.SEO_PRODUCTS_DESCRIPTION_FORMAT, value: validatedData.productsDescription },
-      { key: SETTING_KEYS.SEO_CATEGORIES_TITLE_FORMAT, value: validatedData.categoriesTitle },
-      { key: SETTING_KEYS.SEO_CATEGORIES_DESCRIPTION_FORMAT, value: validatedData.categoriesDescription }
+      { key: keys.SEO_TITLE, value: validatedData.title || null },
+      { key: keys.SEO_DESCRIPTION, value: validatedData.description || null },
+      { key: keys.SEO_KEYWORDS, value: validatedData.keywords || null },
+      { key: keys.SEO_ROBOTS, value: validatedData.robots },
+      { key: keys.SEO_GOOGLE_ANALYTICS, value: validatedData.googleAnalytics || null },
+      { key: keys.SEO_GOOGLE_TAG_MANAGER, value: validatedData.googleTagManager || null },
+      { key: keys.SEO_PRODUCTS_TITLE_FORMAT, value: validatedData.productsTitle },
+      { key: keys.SEO_PRODUCTS_DESCRIPTION_FORMAT, value: validatedData.productsDescription },
+      { key: keys.SEO_CATEGORIES_TITLE_FORMAT, value: validatedData.categoriesTitle },
+      { key: keys.SEO_CATEGORIES_DESCRIPTION_FORMAT, value: validatedData.categoriesDescription }
     ]
 
     // Update settings
@@ -200,19 +205,19 @@ export async function updateSEOSettings(data: SEOSettingsFormInput) {
 // UI SETTINGS UPDATE
 // ==========================================
 
-export async function updateUISettings(data: UISettingsFormInput) {
+export async function updateUISettings(data: UISettingsFormInput, keys: Record<string, string>) {
   return withAdmin(async (user) => {
     // Validate input data
     const validatedData = uiSettingsFormSchema.parse(data)
     
-    // Convert form data to setting updates
+    // Convert form data to setting updates using provided keys
     const settingsToUpdate: UpdateSettingData[] = [
-      { key: SETTING_KEYS.UI_THEME, value: validatedData.theme },
-      { key: SETTING_KEYS.UI_PRIMARY_COLOR, value: validatedData.primaryColor },
-      { key: SETTING_KEYS.UI_SECONDARY_COLOR, value: validatedData.secondaryColor || null },
-      { key: SETTING_KEYS.UI_HEADER_STYLE, value: validatedData.headerStyle },
-      { key: SETTING_KEYS.UI_FOOTER_STYLE, value: validatedData.footerStyle },
-      { key: SETTING_KEYS.UI_HOMEPAGE_LAYOUT, value: validatedData.homepageLayout }
+      { key: keys.UI_THEME, value: validatedData.theme },
+      { key: keys.UI_PRIMARY_COLOR, value: validatedData.primaryColor },
+      { key: keys.UI_SECONDARY_COLOR, value: validatedData.secondaryColor || null },
+      { key: keys.UI_HEADER_STYLE, value: validatedData.headerStyle },
+      { key: keys.UI_FOOTER_STYLE, value: validatedData.footerStyle },
+      { key: keys.UI_HOMEPAGE_LAYOUT, value: validatedData.homepageLayout }
     ]
 
     // Update settings
@@ -224,20 +229,20 @@ export async function updateUISettings(data: UISettingsFormInput) {
 // EMAIL SETTINGS UPDATE
 // ==========================================
 
-export async function updateEmailSettings(data: EmailSettingsFormInput) {
+export async function updateEmailSettings(data: EmailSettingsFormInput, keys: Record<string, string>) {
   return withAdmin(async (user) => {
     // Validate input data
     const validatedData = emailSettingsFormSchema.parse(data)
     
-    // Convert form data to setting updates
+    // Convert form data to setting updates using provided keys
     const settingsToUpdate: UpdateSettingData[] = [
-      { key: SETTING_KEYS.EMAIL_FROM_NAME, value: validatedData.fromName },
-      { key: SETTING_KEYS.EMAIL_FROM_ADDRESS, value: validatedData.fromAddress },
-      { key: SETTING_KEYS.EMAIL_SMTP_HOST, value: validatedData.smtpHost },
-      { key: SETTING_KEYS.EMAIL_SMTP_PORT, value: validatedData.smtpPort.toString() },
-      { key: SETTING_KEYS.EMAIL_SMTP_USER, value: validatedData.smtpUser || null },
-      { key: SETTING_KEYS.EMAIL_SMTP_PASSWORD, value: validatedData.smtpPassword || null },
-      { key: SETTING_KEYS.EMAIL_SMTP_SECURE, value: validatedData.smtpSecure.toString() }
+      { key: keys.EMAIL_FROM_NAME, value: validatedData.fromName },
+      { key: keys.EMAIL_FROM_ADDRESS, value: validatedData.fromAddress },
+      { key: keys.EMAIL_SMTP_HOST, value: validatedData.smtpHost },
+      { key: keys.EMAIL_SMTP_PORT, value: validatedData.smtpPort.toString() },
+      { key: keys.EMAIL_SMTP_USER, value: validatedData.smtpUser || null },
+      { key: keys.EMAIL_SMTP_PASSWORD, value: validatedData.smtpPassword || null },
+      { key: keys.EMAIL_SMTP_SECURE, value: validatedData.smtpSecure.toString() }
     ]
 
     // Update settings
@@ -249,16 +254,16 @@ export async function updateEmailSettings(data: EmailSettingsFormInput) {
 // PAYMENT SETTINGS UPDATE
 // ==========================================
 
-export async function updatePaymentSettings(data: PaymentSettingsFormInput) {
+export async function updatePaymentSettings(data: PaymentSettingsFormInput, keys: Record<string, string>) {
   return withAdmin(async (user) => {
     // Validate input data
     const validatedData = paymentSettingsFormSchema.parse(data)
     
-    // Convert form data to setting updates
+    // Convert form data to setting updates using provided keys
     const settingsToUpdate: UpdateSettingData[] = [
-      { key: SETTING_KEYS.PAYMENT_CURRENCY, value: validatedData.currency },
-      { key: SETTING_KEYS.PAYMENT_TAX_RATE, value: validatedData.taxRate.toString() },
-      { key: SETTING_KEYS.PAYMENT_ENABLED_METHODS, value: JSON.stringify(validatedData.enabledMethods) }
+      { key: keys.PAYMENT_CURRENCY, value: validatedData.currency },
+      { key: keys.PAYMENT_TAX_RATE, value: validatedData.taxRate.toString() },
+      { key: keys.PAYMENT_ENABLED_METHODS, value: JSON.stringify(validatedData.enabledMethods) }
     ]
 
     // Update settings
@@ -270,16 +275,16 @@ export async function updatePaymentSettings(data: PaymentSettingsFormInput) {
 // SHIPPING SETTINGS UPDATE
 // ==========================================
 
-export async function updateShippingSettings(data: ShippingSettingsFormInput) {
+export async function updateShippingSettings(data: ShippingSettingsFormInput, keys: Record<string, string>) {
   return withAdmin(async (user) => {
     // Validate input data
     const validatedData = shippingSettingsFormSchema.parse(data)
     
-    // Convert form data to setting updates
+    // Convert form data to setting updates using provided keys
     const settingsToUpdate: UpdateSettingData[] = [
-      { key: SETTING_KEYS.SHIPPING_ENABLED, value: validatedData.enabled.toString() },
-      { key: SETTING_KEYS.SHIPPING_FREE_THRESHOLD, value: validatedData.freeThreshold.toString() },
-      { key: SETTING_KEYS.SHIPPING_DEFAULT_COST, value: validatedData.defaultCost.toString() }
+      { key: keys.SHIPPING_ENABLED, value: validatedData.enabled.toString() },
+      { key: keys.SHIPPING_FREE_THRESHOLD, value: validatedData.freeThreshold.toString() },
+      { key: keys.SHIPPING_DEFAULT_COST, value: validatedData.defaultCost.toString() }
     ]
 
     // Update settings
@@ -291,17 +296,17 @@ export async function updateShippingSettings(data: ShippingSettingsFormInput) {
 // GENERAL SETTINGS UPDATE
 // ==========================================
 
-export async function updateGeneralSettings(data: GeneralSettingsFormInput) {
+export async function updateGeneralSettings(data: GeneralSettingsFormInput, keys: Record<string, string>) {
   return withAdmin(async (user) => {
     // Validate input data
     const validatedData = generalSettingsFormSchema.parse(data)
     
-    // Convert form data to setting updates
+    // Convert form data to setting updates using provided keys
     const settingsToUpdate: UpdateSettingData[] = [
-      { key: SETTING_KEYS.GENERAL_MAINTENANCE_MODE, value: validatedData.maintenanceMode.toString() },
-      { key: SETTING_KEYS.GENERAL_REGISTRATION_ENABLED, value: validatedData.registrationEnabled.toString() },
-      { key: SETTING_KEYS.GENERAL_GUEST_CHECKOUT, value: validatedData.guestCheckout.toString() },
-      { key: SETTING_KEYS.GENERAL_INVENTORY_TRACKING, value: validatedData.inventoryTracking.toString() }
+      { key: keys.GENERAL_MAINTENANCE_MODE, value: validatedData.maintenanceMode.toString() },
+      { key: keys.GENERAL_REGISTRATION_ENABLED, value: validatedData.registrationEnabled.toString() },
+      { key: keys.GENERAL_GUEST_CHECKOUT, value: validatedData.guestCheckout.toString() },
+      { key: keys.GENERAL_INVENTORY_TRACKING, value: validatedData.inventoryTracking.toString() }
     ]
 
     // Update settings

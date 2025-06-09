@@ -24,70 +24,80 @@ import {
   SelectValue,
 } from "@shadcn/select"
 import { Loader2 } from "lucide-react"
+import { MediaPicker } from "@ui/components/admin/media/MediaPicker"
 
 // Import settings actions and schemas
 import { 
   siteSettingsFormSchema, 
   type SiteSettingsFormInput 
 } from "@actions/settings/formSchema"
-import { updateSiteSettings } from "@actions/settings"
+import { updateSiteSettings, getFreshSettings } from "@actions/settings"
+import { getDefaultSetting, SITE_SETTING_KEYS } from "@actions/settings/types"
 import { useSettingsStore } from "@data/useSettingsStore"
-import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
 
 export function SiteSettingsForm() {
   const [isLoading, setIsLoading] = useState(false)
-  
-  const { 
-    settings, 
-    getSetting, 
-    getSettingWithDefault, 
-    initialized, 
-    isLoading: settingsLoading,
-    fetchSettings,
-    invalidateCache
-  } = useSettingsStore()
+  const [initialLoading, setInitialLoading] = useState(true)
+  const { invalidateCache } = useSettingsStore()
 
   const form = useForm<SiteSettingsFormInput>({
     resolver: zodResolver(siteSettingsFormSchema),
     defaultValues: {
-      title: getDefaultSetting(SETTING_KEYS.SITE_TITLE),
-      description: getDefaultSetting(SETTING_KEYS.SITE_DESCRIPTION),
-      language: getDefaultSetting(SETTING_KEYS.SITE_LANGUAGE) as "fa" | "en",
-      timezone: getDefaultSetting(SETTING_KEYS.SITE_TIMEZONE),
-      currency: getDefaultSetting(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR",
-      logoId: getDefaultSetting(SETTING_KEYS.SITE_LOGO),
-      faviconId: getDefaultSetting(SETTING_KEYS.SITE_FAVICON)
+      title: getDefaultSetting(SITE_SETTING_KEYS.SITE_TITLE),
+      description: getDefaultSetting(SITE_SETTING_KEYS.SITE_DESCRIPTION),
+      language: getDefaultSetting(SITE_SETTING_KEYS.SITE_LANGUAGE) as "fa" | "en",
+      timezone: getDefaultSetting(SITE_SETTING_KEYS.SITE_TIMEZONE),
+      currency: getDefaultSetting(SITE_SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR",
+      logoId: getDefaultSetting(SITE_SETTING_KEYS.SITE_LOGO),
+      faviconId: getDefaultSetting(SITE_SETTING_KEYS.SITE_FAVICON)
     }
   })
 
-  // Initialize settings
+  // Load fresh settings on component mount
   useEffect(() => {
-    if (!initialized && !settingsLoading) {
-      fetchSettings()
+    const loadSettings = async () => {
+      try {
+        const settings = await getFreshSettings(Object.values(SITE_SETTING_KEYS))
+        
+        form.reset({
+          title: settings[SITE_SETTING_KEYS.SITE_TITLE] || getDefaultSetting(SITE_SETTING_KEYS.SITE_TITLE),
+          description: settings[SITE_SETTING_KEYS.SITE_DESCRIPTION] || getDefaultSetting(SITE_SETTING_KEYS.SITE_DESCRIPTION),
+          language: (settings[SITE_SETTING_KEYS.SITE_LANGUAGE] || getDefaultSetting(SITE_SETTING_KEYS.SITE_LANGUAGE)) as "fa" | "en",
+          timezone: settings[SITE_SETTING_KEYS.SITE_TIMEZONE] || getDefaultSetting(SITE_SETTING_KEYS.SITE_TIMEZONE),
+          currency: (settings[SITE_SETTING_KEYS.SITE_CURRENCY] || getDefaultSetting(SITE_SETTING_KEYS.SITE_CURRENCY)) as "IRR" | "USD" | "EUR",
+          logoId: settings[SITE_SETTING_KEYS.SITE_LOGO] || getDefaultSetting(SITE_SETTING_KEYS.SITE_LOGO),
+          faviconId: settings[SITE_SETTING_KEYS.SITE_FAVICON] || getDefaultSetting(SITE_SETTING_KEYS.SITE_FAVICON)
+        })
+      } catch (error) {
+        console.error("خطا در بارگذاری تنظیمات:", error)
+        toast.error("خطا در بارگذاری تنظیمات")
+      } finally {
+        setInitialLoading(false)
+      }
     }
-  }, [initialized, settingsLoading, fetchSettings])
 
-  // Load settings into form when settings are loaded
-  useEffect(() => {
-    if (initialized && Object.keys(settings).length > 0) {
-      form.reset({
-        title: getSettingWithDefault(SETTING_KEYS.SITE_TITLE),
-        description: getSettingWithDefault(SETTING_KEYS.SITE_DESCRIPTION),
-        language: (getSettingWithDefault(SETTING_KEYS.SITE_LANGUAGE) as "fa" | "en"),
-        timezone: getSettingWithDefault(SETTING_KEYS.SITE_TIMEZONE), 
-        currency: (getSettingWithDefault(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR"),
-        logoId: getSettingWithDefault(SETTING_KEYS.SITE_LOGO),
-        faviconId: getSettingWithDefault(SETTING_KEYS.SITE_FAVICON)
-      })
-    }
-  }, [initialized, settings, getSettingWithDefault, form])
+    loadSettings()
+  }, [form])
 
   async function onSubmit(data: SiteSettingsFormInput) {
     setIsLoading(true)
     try {
-      await updateSiteSettings(data)
-      // Invalidate cache to refetch settings
-      invalidateCache()
+      await updateSiteSettings(data, SITE_SETTING_KEYS)
+      
+      // Invalidate both server and client caches to get fresh data
+      await invalidateCache()
+      
+      // Reload fresh settings after cache invalidation
+      const freshSettings = await getFreshSettings(Object.values(SITE_SETTING_KEYS))
+      form.reset({
+        title: freshSettings[SITE_SETTING_KEYS.SITE_TITLE] || getDefaultSetting(SITE_SETTING_KEYS.SITE_TITLE),
+        description: freshSettings[SITE_SETTING_KEYS.SITE_DESCRIPTION] || getDefaultSetting(SITE_SETTING_KEYS.SITE_DESCRIPTION),
+        language: (freshSettings[SITE_SETTING_KEYS.SITE_LANGUAGE] || getDefaultSetting(SITE_SETTING_KEYS.SITE_LANGUAGE)) as "fa" | "en",
+        timezone: freshSettings[SITE_SETTING_KEYS.SITE_TIMEZONE] || getDefaultSetting(SITE_SETTING_KEYS.SITE_TIMEZONE),
+        currency: (freshSettings[SITE_SETTING_KEYS.SITE_CURRENCY] || getDefaultSetting(SITE_SETTING_KEYS.SITE_CURRENCY)) as "IRR" | "USD" | "EUR",
+        logoId: freshSettings[SITE_SETTING_KEYS.SITE_LOGO] || getDefaultSetting(SITE_SETTING_KEYS.SITE_LOGO),
+        faviconId: freshSettings[SITE_SETTING_KEYS.SITE_FAVICON] || getDefaultSetting(SITE_SETTING_KEYS.SITE_FAVICON)
+      })
       toast.success("تنظیمات سایت با موفقیت ذخیره شد")
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
@@ -97,7 +107,7 @@ export function SiteSettingsForm() {
     }
   }
 
-  if (!initialized) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -228,10 +238,15 @@ export function SiteSettingsForm() {
               <FormItem>
                 <FormLabel>لوگوی سایت</FormLabel>
                 <FormControl>
-                  <Input placeholder="شناسه تصویر لوگو" {...field} />
+                  <MediaPicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    label="انتخاب لوگو"
+                    placeholder="لوگو انتخاب نشده است"
+                  />
                 </FormControl>
                 <FormDescription>
-                  شناسه تصویر لوگو از بخش رسانه
+                  لوگوی سایت که در هدر نمایش داده می‌شود
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -245,10 +260,15 @@ export function SiteSettingsForm() {
               <FormItem>
                 <FormLabel>آیکون سایت (Favicon)</FormLabel>
                 <FormControl>
-                  <Input placeholder="شناسه تصویر آیکون" {...field} />
+                  <MediaPicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    label="انتخاب آیکون"
+                    placeholder="آیکون انتخاب نشده است"
+                  />
                 </FormControl>
                 <FormDescription>
-                  شناسه تصویر آیکون از بخش رسانه
+                  آیکون سایت که در تب مرورگر نمایش داده می‌شود
                 </FormDescription>
                 <FormMessage />
               </FormItem>

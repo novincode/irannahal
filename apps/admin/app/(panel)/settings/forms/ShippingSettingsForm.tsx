@@ -10,56 +10,57 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shad
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
-import { updateShippingSettings } from "@actions/settings"
+import { getFreshSettings, updateShippingSettings } from "@actions/settings"
 import { shippingSettingsFormSchema, type ShippingSettingsFormInput } from "@actions/settings/formSchema"
-import { useSettingsStore } from "@data/useSettingsStore"
-import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
+import { getDefaultSetting, SHIPPING_SETTING_KEYS } from "@actions/settings/types"
 
 export default function ShippingSettingsForm() {
   const [loading, setLoading] = useState(false)
-  
-  const { 
-    settings, 
-    getSetting, 
-    getSettingWithDefault, 
-    initialized, 
-    isLoading: settingsLoading,
-    fetchSettings,
-    invalidateCache
-  } = useSettingsStore()
+  const [initialLoading, setInitialLoading] = useState(true)
 
   const form = useForm<ShippingSettingsFormInput>({
     resolver: zodResolver(shippingSettingsFormSchema),
     defaultValues: {
-      enabled: getDefaultSetting(SETTING_KEYS.SHIPPING_ENABLED) === "true",
-      freeThreshold: parseFloat(getDefaultSetting(SETTING_KEYS.SHIPPING_FREE_THRESHOLD) || "0"),
-      defaultCost: parseFloat(getDefaultSetting(SETTING_KEYS.SHIPPING_DEFAULT_COST) || "0")
+      enabled: getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_ENABLED) === "true",
+      freeThreshold: parseFloat(getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_FREE_THRESHOLD) || "0"),
+      defaultCost: parseFloat(getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_DEFAULT_COST) || "0")
     }
   })
 
-  // Initialize settings
   useEffect(() => {
-    if (!initialized && !settingsLoading) {
-      fetchSettings()
+    const loadSettings = async () => {
+      try {
+        const settings = await getFreshSettings(Object.values(SHIPPING_SETTING_KEYS))
+        
+        form.reset({
+          enabled: (settings[SHIPPING_SETTING_KEYS.SHIPPING_ENABLED] || getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_ENABLED)) === "true",
+          freeThreshold: parseFloat(settings[SHIPPING_SETTING_KEYS.SHIPPING_FREE_THRESHOLD] || getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_FREE_THRESHOLD) || "0"),
+          defaultCost: parseFloat(settings[SHIPPING_SETTING_KEYS.SHIPPING_DEFAULT_COST] || getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_DEFAULT_COST) || "0")
+        })
+      } catch (error) {
+        console.error("خطا در بارگذاری تنظیمات:", error)
+        toast.error("خطا در بارگذاری تنظیمات")
+      } finally {
+        setInitialLoading(false)
+      }
     }
-  }, [initialized, settingsLoading, fetchSettings])
 
-  // Load settings into form when settings are loaded
-  useEffect(() => {
-    if (initialized && Object.keys(settings).length > 0) {
-      form.reset({
-        enabled: getSettingWithDefault(SETTING_KEYS.SHIPPING_ENABLED) === "true",
-        freeThreshold: parseFloat(getSettingWithDefault(SETTING_KEYS.SHIPPING_FREE_THRESHOLD) || "0"),
-        defaultCost: parseFloat(getSettingWithDefault(SETTING_KEYS.SHIPPING_DEFAULT_COST) || "0")
-      })
-    }
-  }, [initialized, settings, getSettingWithDefault, form])
+    loadSettings()
+  }, [form])
 
   const onSubmit = async (data: ShippingSettingsFormInput) => {
     setLoading(true)
     try {
-      await updateShippingSettings(data)
+      await updateShippingSettings(data, SHIPPING_SETTING_KEYS)
       toast.success("تنظیمات ارسال با موفقیت ذخیره شد")
+      
+      // Fetch fresh data after update
+      const freshSettings = await getFreshSettings(Object.values(SHIPPING_SETTING_KEYS))
+      form.reset({
+        enabled: (freshSettings[SHIPPING_SETTING_KEYS.SHIPPING_ENABLED] || getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_ENABLED)) === "true",
+        freeThreshold: parseFloat(freshSettings[SHIPPING_SETTING_KEYS.SHIPPING_FREE_THRESHOLD] || getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_FREE_THRESHOLD) || "0"),
+        defaultCost: parseFloat(freshSettings[SHIPPING_SETTING_KEYS.SHIPPING_DEFAULT_COST] || getDefaultSetting(SHIPPING_SETTING_KEYS.SHIPPING_DEFAULT_COST) || "0")
+      })
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
       toast.error("خطا در ذخیره تنظیمات")
@@ -68,7 +69,7 @@ export default function ShippingSettingsForm() {
     }
   }
 
-  if (settingsLoading) {
+  if (initialLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-6">

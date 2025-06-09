@@ -10,66 +10,70 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shad
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
-import { updateEmailSettings } from "@actions/settings"
+import { getFreshSettings, updateEmailSettings } from "@actions/settings"
 import { emailSettingsFormSchema, type EmailSettingsFormInput } from "@actions/settings/formSchema"
-import { useSettingsStore } from "@data/useSettingsStore"
-import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
+import { getDefaultSetting, EMAIL_SETTING_KEYS } from "@actions/settings/types"
 
 export function EmailSettingsForm() {
   const [loading, setLoading] = useState(false)
   const [testingEmail, setTestingEmail] = useState(false)
-
-  const { 
-    settings, 
-    getSetting, 
-    getSettingWithDefault, 
-    initialized, 
-    isLoading: settingsLoading,
-    fetchSettings,
-    invalidateCache
-  } = useSettingsStore()
+  const [initialLoading, setInitialLoading] = useState(true)
 
   const form = useForm<EmailSettingsFormInput>({
     resolver: zodResolver(emailSettingsFormSchema),
     defaultValues: {
-      fromName: getDefaultSetting(SETTING_KEYS.EMAIL_FROM_NAME),
-      fromAddress: getDefaultSetting(SETTING_KEYS.EMAIL_FROM_ADDRESS),
-      smtpHost: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_HOST),
-      smtpPort: parseInt(getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_PORT) || "587"),
-      smtpUser: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_USER),
-      smtpPassword: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_PASSWORD),
-      smtpSecure: getDefaultSetting(SETTING_KEYS.EMAIL_SMTP_SECURE) === "true"
+      fromName: getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_FROM_NAME),
+      fromAddress: getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_FROM_ADDRESS),
+      smtpHost: getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_HOST),
+      smtpPort: parseInt(getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_PORT) || "587"),
+      smtpUser: getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_USER),
+      smtpPassword: getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_PASSWORD),
+      smtpSecure: getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_SECURE) === "true"
     }
   })
 
-  // Initialize settings
   useEffect(() => {
-    if (!initialized && !settingsLoading) {
-      fetchSettings()
+    const loadSettings = async () => {
+      try {
+        const settings = await getFreshSettings(Object.values(EMAIL_SETTING_KEYS))
+        
+        form.reset({
+          fromName: settings[EMAIL_SETTING_KEYS.EMAIL_FROM_NAME] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_FROM_NAME),
+          fromAddress: settings[EMAIL_SETTING_KEYS.EMAIL_FROM_ADDRESS] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_FROM_ADDRESS),
+          smtpHost: settings[EMAIL_SETTING_KEYS.EMAIL_SMTP_HOST] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_HOST),
+          smtpPort: parseInt(settings[EMAIL_SETTING_KEYS.EMAIL_SMTP_PORT] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_PORT) || "587"),
+          smtpUser: settings[EMAIL_SETTING_KEYS.EMAIL_SMTP_USER] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_USER),
+          smtpPassword: settings[EMAIL_SETTING_KEYS.EMAIL_SMTP_PASSWORD] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_PASSWORD),
+          smtpSecure: (settings[EMAIL_SETTING_KEYS.EMAIL_SMTP_SECURE] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_SECURE)) === "true"
+        })
+      } catch (error) {
+        console.error("خطا در بارگذاری تنظیمات:", error)
+        toast.error("خطا در بارگذاری تنظیمات")
+      } finally {
+        setInitialLoading(false)
+      }
     }
-  }, [initialized, settingsLoading, fetchSettings])
 
-  // Load settings into form when settings are loaded
-  useEffect(() => {
-    if (initialized && Object.keys(settings).length > 0) {
-      form.reset({
-        fromName: getSettingWithDefault(SETTING_KEYS.EMAIL_FROM_NAME),
-        fromAddress: getSettingWithDefault(SETTING_KEYS.EMAIL_FROM_ADDRESS),
-        smtpHost: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_HOST),
-        smtpPort: parseInt(getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_PORT) || "587"),
-        smtpUser: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_USER),
-        smtpPassword: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_PASSWORD),
-        smtpSecure: getSettingWithDefault(SETTING_KEYS.EMAIL_SMTP_SECURE) === "true"
-      })
-    }
-  }, [initialized, settings, getSettingWithDefault, form])
+    loadSettings()
+  }, [form])
 
   const onSubmit = async (data: EmailSettingsFormInput) => {
     setLoading(true)
     try {
-      await updateEmailSettings(data)
-      invalidateCache() // Invalidate cache to refresh settings
+      await updateEmailSettings(data, EMAIL_SETTING_KEYS)
       toast.success("تنظیمات ایمیل با موفقیت ذخیره شد")
+      
+      // Fetch fresh data after update
+      const freshSettings = await getFreshSettings(Object.values(EMAIL_SETTING_KEYS))
+      form.reset({
+        fromName: freshSettings[EMAIL_SETTING_KEYS.EMAIL_FROM_NAME] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_FROM_NAME),
+        fromAddress: freshSettings[EMAIL_SETTING_KEYS.EMAIL_FROM_ADDRESS] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_FROM_ADDRESS),
+        smtpHost: freshSettings[EMAIL_SETTING_KEYS.EMAIL_SMTP_HOST] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_HOST),
+        smtpPort: parseInt(freshSettings[EMAIL_SETTING_KEYS.EMAIL_SMTP_PORT] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_PORT) || "587"),
+        smtpUser: freshSettings[EMAIL_SETTING_KEYS.EMAIL_SMTP_USER] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_USER),
+        smtpPassword: freshSettings[EMAIL_SETTING_KEYS.EMAIL_SMTP_PASSWORD] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_PASSWORD),
+        smtpSecure: (freshSettings[EMAIL_SETTING_KEYS.EMAIL_SMTP_SECURE] || getDefaultSetting(EMAIL_SETTING_KEYS.EMAIL_SMTP_SECURE)) === "true"
+      })
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
       toast.error("خطا در ذخیره تنظیمات")
@@ -92,7 +96,7 @@ export function EmailSettingsForm() {
     }
   }
 
-  if (!initialized) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin" />

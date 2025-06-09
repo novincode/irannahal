@@ -11,10 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shad
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, CreditCard } from "lucide-react"
 import { toast } from "sonner"
-import { updatePaymentSettings } from "@actions/settings"
+import { getFreshSettings, updatePaymentSettings } from "@actions/settings"
 import { paymentSettingsFormSchema, type PaymentSettingsFormInput } from "@actions/settings/formSchema"
-import { useSettingsStore } from "@data/useSettingsStore"
-import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
+import { getDefaultSetting, PAYMENT_SETTING_KEYS, SITE_SETTING_KEYS } from "@actions/settings/types"
 
 const PAYMENT_METHODS = [
   { id: "bank_transfer", label: "انتقال بانکی" },
@@ -25,54 +24,63 @@ const PAYMENT_METHODS = [
 
 export function PaymentSettingsForm() {
   const [loading, setLoading] = useState(false)
-  
-  const { 
-    settings, 
-    getSetting, 
-    getSettingWithDefault, 
-    initialized, 
-    isLoading: settingsLoading,
-    fetchSettings,
-    invalidateCache
-  } = useSettingsStore()
+  const [initialLoading, setInitialLoading] = useState(true)
 
   const form = useForm<PaymentSettingsFormInput>({
     resolver: zodResolver(paymentSettingsFormSchema),
     defaultValues: {
-      currency: getDefaultSetting(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR",
-      taxRate: parseFloat(getDefaultSetting(SETTING_KEYS.PAYMENT_TAX_RATE) || "0"),
-      enabledMethods: JSON.parse(getDefaultSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS) || '["bank_transfer"]')
+      currency: getDefaultSetting(SITE_SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR",
+      taxRate: parseFloat(getDefaultSetting(PAYMENT_SETTING_KEYS.PAYMENT_TAX_RATE) || "0"),
+      enabledMethods: JSON.parse(getDefaultSetting(PAYMENT_SETTING_KEYS.PAYMENT_ENABLED_METHODS) || '["bank_transfer"]')
     }
   })
 
-  // Initialize settings
   useEffect(() => {
-    if (!initialized && !settingsLoading) {
-      fetchSettings()
+    const loadSettings = async () => {
+      try {
+        // Need to fetch both site currency and payment settings
+        const allKeys = [...Object.values(PAYMENT_SETTING_KEYS), SITE_SETTING_KEYS.SITE_CURRENCY]
+        const settings = await getFreshSettings(allKeys)
+        
+        const enabledMethods = settings[PAYMENT_SETTING_KEYS.PAYMENT_ENABLED_METHODS]
+          ? JSON.parse(settings[PAYMENT_SETTING_KEYS.PAYMENT_ENABLED_METHODS] as string)
+          : JSON.parse(getDefaultSetting(PAYMENT_SETTING_KEYS.PAYMENT_ENABLED_METHODS) || '["bank_transfer"]')
+        
+        form.reset({
+          currency: (settings[SITE_SETTING_KEYS.SITE_CURRENCY] || getDefaultSetting(SITE_SETTING_KEYS.SITE_CURRENCY)) as "IRR" | "USD" | "EUR",
+          taxRate: parseFloat(settings[PAYMENT_SETTING_KEYS.PAYMENT_TAX_RATE] || getDefaultSetting(PAYMENT_SETTING_KEYS.PAYMENT_TAX_RATE) || "0"),
+          enabledMethods: enabledMethods
+        })
+      } catch (error) {
+        console.error("خطا در بارگذاری تنظیمات:", error)
+        toast.error("خطا در بارگذاری تنظیمات")
+      } finally {
+        setInitialLoading(false)
+      }
     }
-  }, [initialized, settingsLoading, fetchSettings])
 
-  // Load settings into form when settings are loaded
-  useEffect(() => {
-    if (initialized && Object.keys(settings).length > 0) {
-      const enabledMethods = getSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS)
-        ? JSON.parse(getSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS) as string)
-        : JSON.parse(getDefaultSetting(SETTING_KEYS.PAYMENT_ENABLED_METHODS) || '["bank_transfer"]')
-      
-      form.reset({
-        currency: (getSettingWithDefault(SETTING_KEYS.SITE_CURRENCY) as "IRR" | "USD" | "EUR"),
-        taxRate: parseFloat(getSettingWithDefault(SETTING_KEYS.PAYMENT_TAX_RATE) || "0"),
-        enabledMethods: enabledMethods
-      })
-    }
-  }, [initialized, settings, getSetting, getSettingWithDefault, form])
+    loadSettings()
+  }, [form])
 
   const onSubmit = async (data: PaymentSettingsFormInput) => {
     setLoading(true)
     try {
-      await updatePaymentSettings(data)
-      invalidateCache() // Invalidate cache to refresh settings
+      await updatePaymentSettings(data, PAYMENT_SETTING_KEYS)
       toast.success("تنظیمات پرداخت با موفقیت ذخیره شد")
+      
+      // Fetch fresh data after update
+      const allKeys = [...Object.values(PAYMENT_SETTING_KEYS), SITE_SETTING_KEYS.SITE_CURRENCY]
+      const freshSettings = await getFreshSettings(allKeys)
+      
+      const enabledMethods = freshSettings[PAYMENT_SETTING_KEYS.PAYMENT_ENABLED_METHODS]
+        ? JSON.parse(freshSettings[PAYMENT_SETTING_KEYS.PAYMENT_ENABLED_METHODS] as string)
+        : JSON.parse(getDefaultSetting(PAYMENT_SETTING_KEYS.PAYMENT_ENABLED_METHODS) || '["bank_transfer"]')
+      
+      form.reset({
+        currency: (freshSettings[SITE_SETTING_KEYS.SITE_CURRENCY] || getDefaultSetting(SITE_SETTING_KEYS.SITE_CURRENCY)) as "IRR" | "USD" | "EUR",
+        taxRate: parseFloat(freshSettings[PAYMENT_SETTING_KEYS.PAYMENT_TAX_RATE] || getDefaultSetting(PAYMENT_SETTING_KEYS.PAYMENT_TAX_RATE) || "0"),
+        enabledMethods: enabledMethods
+      })
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
       toast.error("خطا در ذخیره تنظیمات")
@@ -81,7 +89,7 @@ export function PaymentSettingsForm() {
     }
   }
 
-  if (!initialized) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin" />

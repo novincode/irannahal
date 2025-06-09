@@ -14,8 +14,8 @@ export const siteSettingsFormSchema = z.object({
   currency: z.enum(['IRR', 'USD', 'EUR'], {
     errorMap: () => ({ message: 'واحد پول انتخابی نامعتبر است' })
   }).default('IRR'),
-  logoId: z.string().uuid('شناسه لوگو نامعتبر است').optional(),
-  faviconId: z.string().uuid('شناسه فاویکون نامعتبر است').optional()
+  logoId: z.string().optional().nullable(),
+  faviconId: z.string().optional().nullable()
 })
 
 // ==========================================

@@ -1,9 +1,9 @@
 "use server"
 
-import { eq, inArray, like } from "drizzle-orm"
+import { and, eq, inArray, isNull, like } from "drizzle-orm"
 import { db } from "@db"
 import { settings } from "@db/schema"
-import { withAdmin } from "@actions/utils"
+import { withAdmin, withAuth } from "@actions/utils"
 import { autoInitializeSettings } from "./initialize"
 import { 
   getSettingsSchema,
@@ -13,6 +13,8 @@ import {
   SETTING_KEYS,
   DEFAULT_SETTINGS,
   SETTING_CATEGORIES,
+  PUBLIC_SETTING_KEYS,
+  getDefaultSetting,
   type SettingKey,
   type FlatSettings,
   type GroupedSettings,
@@ -248,40 +250,49 @@ export async function getGeneralSettings() {
 
 // Get public settings that can be accessed without authentication
 export async function getPublicSettings(): Promise<Partial<FlatSettings>> {
-  const publicKeys: SettingKey[] = [
-    SETTING_KEYS.SITE_TITLE,
-    SETTING_KEYS.SITE_DESCRIPTION,
-    SETTING_KEYS.SITE_LANGUAGE,
-    SETTING_KEYS.SITE_CURRENCY,
-    SETTING_KEYS.SEO_TITLE,
-    SETTING_KEYS.SEO_DESCRIPTION,
-    SETTING_KEYS.SEO_KEYWORDS,
-    SETTING_KEYS.UI_THEME,
-    SETTING_KEYS.UI_PRIMARY_COLOR,
-    SETTING_KEYS.UI_SECONDARY_COLOR,
-  ]
-
-  return getSettings({ keys: publicKeys })
+  return getSettings({ keys: Object.values(PUBLIC_SETTING_KEYS) })
 }
 
 // Get a single public setting value
 export async function getPublicSetting(key: SettingKey): Promise<string | null> {
-  const publicKeys: SettingKey[] = [
-    SETTING_KEYS.SITE_TITLE,
-    SETTING_KEYS.SITE_DESCRIPTION,
-    SETTING_KEYS.SITE_LANGUAGE,
-    SETTING_KEYS.SITE_CURRENCY,
-    SETTING_KEYS.SEO_TITLE,
-    SETTING_KEYS.SEO_DESCRIPTION,
-    SETTING_KEYS.SEO_KEYWORDS,
-    SETTING_KEYS.UI_THEME,
-    SETTING_KEYS.UI_PRIMARY_COLOR,
-    SETTING_KEYS.UI_SECONDARY_COLOR,
-  ]
+  const publicKeys = Object.values(PUBLIC_SETTING_KEYS) as SettingKey[]
 
   if (!publicKeys.includes(key)) {
     throw new Error("این تنظیمات قابل دسترسی عمومی نیست")
   }
 
   return getSetting(key)
+}
+
+
+
+// ==========================================
+// FRESH SETTINGS HELPERS (BYPASS CACHE)
+// ==========================================
+
+/**
+ * Get fresh settings by keys - bypasses all caching
+ * Use this after updates to ensure you get the latest data
+ */
+export async function getFreshSettings(keys: string[]): Promise<FlatSettings> {
+  return withAuth(async () => {
+    const results = await db
+      .select()
+      .from(settings)
+      .where(inArray(settings.key, keys))
+
+    const settingsMap: FlatSettings = {}
+    
+    // Initialize all keys with defaults
+    for (const key of keys) {
+      settingsMap[key] = DEFAULT_SETTINGS[key as SettingKey] || null
+    }
+    
+    // Override with database values
+    for (const setting of results) {
+      settingsMap[setting.key] = setting.value
+    }
+
+    return settingsMap
+  })
 }

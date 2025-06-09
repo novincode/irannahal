@@ -27,9 +27,15 @@ interface OrdersPageClientProps {
   initialStats: OrderStats
 }
 
-export default function OrdersPageClient
+// Define types for order items
+interface OrderItem {
+  product?: {
+    name?: string
+  }
+  // Add other properties as needed
+}
 
-({ initialOrders, initialStats }: OrdersPageClientProps) {
+export default function OrdersPageClient({ initialOrders, initialStats }: OrdersPageClientProps) {
   const [orders, setOrders] = useState(initialOrders)
   const [stats, setStats] = useState(initialStats)
   const [searchTerm, setSearchTerm] = useState('')
@@ -39,10 +45,10 @@ export default function OrdersPageClient
 
   // Filter orders based on search and status
   const filteredOrders = orders.filter(order => {
-    const orderItems = order.items as any[] | undefined
+    const orderItems = order.items as OrderItem[] | undefined
     const matchesSearch = searchTerm === '' || 
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (orderItems && Array.isArray(orderItems) && orderItems.some((item: any) => 
+      (orderItems && Array.isArray(orderItems) && orderItems.some((item: OrderItem) => 
         item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase())
       ))
     
@@ -195,15 +201,7 @@ export default function OrdersPageClient
           {filteredOrders.map((order) => (
             <OrderCard
               key={order.id}
-              order={{
-                ...order,
-                items: order.items || [],
-                discount: order.discount ? {
-                  id: order.discount.id,
-                  code: order.discount.code,
-                  amount: order.discountAmount || 0
-                } : null
-              }}
+              order={order}
               onViewDetails={handleViewDetails}
               onTrackOrder={handleTrackOrder}
             />

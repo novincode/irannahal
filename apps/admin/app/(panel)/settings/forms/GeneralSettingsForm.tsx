@@ -9,28 +9,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shad
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, Settings } from "lucide-react"
 import { toast } from "sonner"
-import { getGeneralSettings, updateGeneralSettings } from "@actions/settings"
+import { getFreshSettings, updateGeneralSettings } from "@actions/settings"
 import { generalSettingsFormSchema, type GeneralSettingsFormInput } from "@actions/settings/formSchema"
-import { getDefaultSetting, SETTING_KEYS } from "@actions/settings/types"
+import { getDefaultSetting, GENERAL_SETTING_KEYS } from "@actions/settings/types"
+import { useSettingsStore } from "@data/useSettingsStore"
 
 export default function GeneralSettingsForm() {
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const { invalidateCache } = useSettingsStore()
 
   const form = useForm<GeneralSettingsFormInput>({
     resolver: zodResolver(generalSettingsFormSchema),
     defaultValues: {
-      maintenanceMode: getDefaultSetting(SETTING_KEYS.GENERAL_MAINTENANCE_MODE) === "true",
-      registrationEnabled: getDefaultSetting(SETTING_KEYS.GENERAL_REGISTRATION_ENABLED) === "true",
-      guestCheckout: getDefaultSetting(SETTING_KEYS.GENERAL_GUEST_CHECKOUT) === "true",
-      inventoryTracking: getDefaultSetting(SETTING_KEYS.GENERAL_INVENTORY_TRACKING) === "true"
+      maintenanceMode: getDefaultSetting(GENERAL_SETTING_KEYS.GENERAL_MAINTENANCE_MODE) === "true",
+      registrationEnabled: getDefaultSetting(GENERAL_SETTING_KEYS.GENERAL_REGISTRATION_ENABLED) === "true",
+      guestCheckout: getDefaultSetting(GENERAL_SETTING_KEYS.GENERAL_GUEST_CHECKOUT) === "true",
+      inventoryTracking: getDefaultSetting(GENERAL_SETTING_KEYS.GENERAL_INVENTORY_TRACKING) === "true"
     }
   })
 
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const settings = await getGeneralSettings()
+        const settings = await getFreshSettings(Object.values(GENERAL_SETTING_KEYS))
         
         form.reset({
           maintenanceMode: settings["general.maintenance_mode"] === "true",
@@ -52,8 +54,20 @@ export default function GeneralSettingsForm() {
   const onSubmit = async (data: GeneralSettingsFormInput) => {
     setLoading(true)
     try {
-      await updateGeneralSettings(data)
+      await updateGeneralSettings(data, GENERAL_SETTING_KEYS)
       toast.success("تنظیمات عمومی با موفقیت ذخیره شد")
+      
+      // Invalidate both server and client caches to get fresh data
+      await invalidateCache()
+      
+      // Fetch fresh data after cache invalidation
+      const freshSettings = await getFreshSettings(Object.values(GENERAL_SETTING_KEYS))
+      form.reset({
+        maintenanceMode: freshSettings["general.maintenance_mode"] === "true",
+        registrationEnabled: freshSettings["general.registration_enabled"] !== "false",
+        guestCheckout: freshSettings["general.guest_checkout"] !== "false",
+        inventoryTracking: freshSettings["general.inventory_tracking"] !== "false"
+      })
     } catch (error) {
       console.error("خطا در ذخیره تنظیمات:", error)
       toast.error("خطا در ذخیره تنظیمات")

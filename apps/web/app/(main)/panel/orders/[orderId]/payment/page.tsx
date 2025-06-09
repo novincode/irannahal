@@ -19,6 +19,16 @@ import { formatPrice } from '@ui/lib/utils'
 
 type PaymentStatus = 'pending' | 'processing' | 'success' | 'failed'
 
+// Define payment data type
+interface PaymentData {
+  orderId: string
+  gateway: string | null
+  amount?: number
+  transactionId?: string
+  paymentUrl?: string
+  [key: string]: unknown
+}
+
 export default function PaymentPage() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -28,19 +38,8 @@ export default function PaymentPage() {
   const gateway = searchParams.get('gateway')
   
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('pending')
-  const [paymentData, setPaymentData] = useState<any>(null)
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
   
-  useEffect(() => {
-    if (!orderId || !gateway) {
-      toast.error('اطلاعات پرداخت ناقص است')
-      router.push('/panel/orders')
-      return
-    }
-    
-    // Simulate payment processing
-    initiatePayment()
-  }, [orderId, gateway])
-
   const initiatePayment = async () => {
     setPaymentStatus('processing')
     
@@ -157,7 +156,7 @@ export default function PaymentPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">مبلغ:</span>
-                    <p className="font-medium">{formatPrice(paymentData.amount)}</p>
+                    <p className="font-medium">{formatPrice(paymentData.amount || 0)}</p>
                   </div>
                   {paymentData.transactionId && (
                     <div className="col-span-2">

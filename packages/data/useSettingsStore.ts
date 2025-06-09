@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { cachedGetAllSettings } from '@actions/settings';
+import { cachedGetAllSettings, invalidateSettingsCache } from '@actions/settings';
 import type { FlatSettings, SettingKey } from '@actions/settings/types';
 import { getDefaultSetting } from '@actions/settings/types';
 
@@ -11,7 +11,7 @@ interface SettingsState {
   fetchSettings: () => Promise<void>;
   getSetting: (key: SettingKey) => string | null;
   getSettingWithDefault: (key: SettingKey, fallbackValue?: string) => string;
-  invalidateCache: () => void;
+  invalidateCache: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -38,10 +38,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const state = get();
     return state.settings[key] || getDefaultSetting(key) || fallbackValue || '';
   },
-  invalidateCache: () => {
-    // Reset the store and refetch settings
+  invalidateCache: async () => {
+    // First, invalidate server-side cache
+    await invalidateSettingsCache();
+    // Then reset the store state and refetch
     set({ initialized: false, settings: {} });
-    get().fetchSettings();
+    // Force refetch settings (this will now get fresh data from the server)
+    await get().fetchSettings();
   },
   refresh: async () => {
     await get().fetchSettings();

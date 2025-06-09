@@ -16,7 +16,9 @@ export {
   getShippingSettings,
   getGeneralSettings,
   getPublicSettings,
-  getPublicSetting
+  getPublicSetting,
+  // Fresh settings (no cache) - single headless function
+  getFreshSettings
 } from "./get"
 
 export { 
@@ -65,7 +67,7 @@ export {
   getCachedSEOSettings,
   getCachedSetting,
   getCachedMaintenanceMode
-} from "./cached"
+} from "./cache"
 
 // Export all types
 export type * from "./types"
@@ -143,3 +145,12 @@ export {
   autoInitializeSettings,
   checkDatabaseInitialization
 } from "./initialize"
+
+// ==========================================
+// CACHE INVALIDATION ACTIONS
+// ==========================================
+
+export { 
+  invalidateSettingsCache,
+  invalidateSettingsCategoryCache
+} from "./invalidate"

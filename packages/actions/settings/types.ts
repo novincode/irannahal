@@ -39,9 +39,8 @@ export const SETTING_CATEGORIES = {
 
 export type SettingCategory = typeof SETTING_CATEGORIES[keyof typeof SETTING_CATEGORIES]
 
-// Predefined setting keys for type safety
-export const SETTING_KEYS = {
-  // Site settings
+// Grouped setting keys for scalability
+export const SITE_SETTING_KEYS = {
   SITE_TITLE: 'site.title',
   SITE_DESCRIPTION: 'site.description',
   SITE_LOGO: 'site.logo',
@@ -49,32 +48,31 @@ export const SETTING_KEYS = {
   SITE_LANGUAGE: 'site.language',
   SITE_TIMEZONE: 'site.timezone',
   SITE_CURRENCY: 'site.currency',
-  
-  // SEO settings
+} as const
+
+export const SEO_SETTING_KEYS = {
   SEO_TITLE: 'seo.title',
   SEO_DESCRIPTION: 'seo.description',
   SEO_KEYWORDS: 'seo.keywords',
   SEO_ROBOTS: 'seo.robots',
   SEO_GOOGLE_ANALYTICS: 'seo.google_analytics',
   SEO_GOOGLE_TAG_MANAGER: 'seo.google_tag_manager',
-  
-  // Product SEO
   SEO_PRODUCTS_TITLE_FORMAT: 'seo.products.title_format',
   SEO_PRODUCTS_DESCRIPTION_FORMAT: 'seo.products.description_format',
-  
-  // Category SEO
   SEO_CATEGORIES_TITLE_FORMAT: 'seo.categories.title_format',
   SEO_CATEGORIES_DESCRIPTION_FORMAT: 'seo.categories.description_format',
-  
-  // UI settings
+} as const
+
+export const UI_SETTING_KEYS = {
   UI_THEME: 'ui.theme',
   UI_PRIMARY_COLOR: 'ui.primary_color',
   UI_SECONDARY_COLOR: 'ui.secondary_color',
   UI_HEADER_STYLE: 'ui.header_style',
   UI_FOOTER_STYLE: 'ui.footer_style',
   UI_HOMEPAGE_LAYOUT: 'ui.homepage_layout',
-  
-  // Email settings
+} as const
+
+export const EMAIL_SETTING_KEYS = {
   EMAIL_FROM_NAME: 'email.from_name',
   EMAIL_FROM_ADDRESS: 'email.from_address',
   EMAIL_SMTP_HOST: 'email.smtp_host',
@@ -82,22 +80,36 @@ export const SETTING_KEYS = {
   EMAIL_SMTP_USER: 'email.smtp_user',
   EMAIL_SMTP_PASSWORD: 'email.smtp_password',
   EMAIL_SMTP_SECURE: 'email.smtp_secure',
-  
-  // Payment settings
+} as const
+
+export const PAYMENT_SETTING_KEYS = {
   PAYMENT_CURRENCY: 'payment.currency',
   PAYMENT_TAX_RATE: 'payment.tax_rate',
   PAYMENT_ENABLED_METHODS: 'payment.enabled_methods',
-  
-  // Shipping settings
+} as const
+
+export const SHIPPING_SETTING_KEYS = {
   SHIPPING_ENABLED: 'shipping.enabled',
   SHIPPING_FREE_THRESHOLD: 'shipping.free_threshold',
   SHIPPING_DEFAULT_COST: 'shipping.default_cost',
-  
-  // General settings
+} as const
+
+export const GENERAL_SETTING_KEYS = {
   GENERAL_MAINTENANCE_MODE: 'general.maintenance_mode',
   GENERAL_REGISTRATION_ENABLED: 'general.registration_enabled',
   GENERAL_GUEST_CHECKOUT: 'general.guest_checkout',
-  GENERAL_INVENTORY_TRACKING: 'general.inventory_tracking'
+  GENERAL_INVENTORY_TRACKING: 'general.inventory_tracking',
+} as const
+
+// Combined keys for backward compatibility and access to all keys
+export const SETTING_KEYS = {
+  ...SITE_SETTING_KEYS,
+  ...SEO_SETTING_KEYS,
+  ...UI_SETTING_KEYS,
+  ...EMAIL_SETTING_KEYS,
+  ...PAYMENT_SETTING_KEYS,
+  ...SHIPPING_SETTING_KEYS,
+  ...GENERAL_SETTING_KEYS,
 } as const
 
 export type SettingKey = typeof SETTING_KEYS[keyof typeof SETTING_KEYS]
@@ -291,3 +303,28 @@ export function getSettingWithDefault(settings: FlatSettings, key: SettingKey): 
 }
 
 // ==========================================
+// PUBLIC SETTINGS
+// ==========================================
+
+// Public keys that can be accessed without authentication
+export const PUBLIC_SETTING_KEYS = {
+  SITE_TITLE: SITE_SETTING_KEYS.SITE_TITLE,
+  SITE_DESCRIPTION: SITE_SETTING_KEYS.SITE_DESCRIPTION,
+  SITE_LANGUAGE: SITE_SETTING_KEYS.SITE_LANGUAGE,
+  SITE_CURRENCY: SITE_SETTING_KEYS.SITE_CURRENCY,
+  SITE_LOGO: SITE_SETTING_KEYS.SITE_LOGO,
+  SITE_FAVICON: SITE_SETTING_KEYS.SITE_FAVICON,
+  SEO_TITLE: SEO_SETTING_KEYS.SEO_TITLE,
+  SEO_DESCRIPTION: SEO_SETTING_KEYS.SEO_DESCRIPTION,
+  SEO_KEYWORDS: SEO_SETTING_KEYS.SEO_KEYWORDS,
+  SEO_ROBOTS: SEO_SETTING_KEYS.SEO_ROBOTS,
+  SEO_GOOGLE_ANALYTICS: SEO_SETTING_KEYS.SEO_GOOGLE_ANALYTICS,
+  SEO_GOOGLE_TAG_MANAGER: SEO_SETTING_KEYS.SEO_GOOGLE_TAG_MANAGER,
+  UI_THEME: UI_SETTING_KEYS.UI_THEME,
+  UI_PRIMARY_COLOR: UI_SETTING_KEYS.UI_PRIMARY_COLOR,
+  UI_SECONDARY_COLOR: UI_SETTING_KEYS.UI_SECONDARY_COLOR,
+  UI_HEADER_STYLE: UI_SETTING_KEYS.UI_HEADER_STYLE,
+  UI_FOOTER_STYLE: UI_SETTING_KEYS.UI_FOOTER_STYLE,
+  UI_HOMEPAGE_LAYOUT: UI_SETTING_KEYS.UI_HOMEPAGE_LAYOUT,
+  GENERAL_MAINTENANCE_MODE: GENERAL_SETTING_KEYS.GENERAL_MAINTENANCE_MODE,
+} as const

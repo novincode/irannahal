@@ -2,11 +2,11 @@
 import React from 'react'
 import Link from 'next/link'
 import { useSettingsStore } from '@data/useSettingsStore'
-import { SETTING_KEYS } from '@actions/settings/types'
+import { SITE_SETTING_KEYS } from '@actions/settings/types'
 
 const Logo = () => {
     const { getSettingWithDefault } = useSettingsStore()
-    const siteTitle = getSettingWithDefault(SETTING_KEYS.SITE_TITLE)
+    const siteTitle = getSettingWithDefault(SITE_SETTING_KEYS.SITE_TITLE)
     
     return (
         <Link href={'/'}>

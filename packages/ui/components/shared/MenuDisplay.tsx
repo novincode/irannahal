@@ -87,7 +87,7 @@ const MenuSubItem = React.forwardRef<
           rel={item.rel || undefined}
           className={cn(
             "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            level > 0 && "ml-4 border-l border-border pl-3" // Indent nested items
+            level > 0 && "mr-4 border-r border-border pr-3" // Indent nested items
           )}
         >
           <div className="text-sm font-medium leading-none">{item.label}</div>
