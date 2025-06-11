@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { Suspense } from "react"
 import { SettingsNavigation } from "./SettingsNavigation"
 import { Loader2 } from "lucide-react"
+import { Card, CardContent } from "@shadcn/card"
 
 export const metadata: Metadata = {
   title: "تنظیمات",
@@ -21,14 +22,18 @@ export default function SettingsLayout({
       
       <div className="space-y-6">
         <SettingsNavigation />
-        <Suspense fallback={
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="mr-2">در حال بارگذاری...</span>
-          </div>
-        }>
-          {children}
-        </Suspense>
+        <Card>
+          <CardContent className="p-6">
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <span className="mr-2">در حال بارگذاری...</span>
+              </div>
+            }>
+              {children}
+            </Suspense>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

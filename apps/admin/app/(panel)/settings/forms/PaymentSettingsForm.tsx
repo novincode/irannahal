@@ -7,7 +7,7 @@ import { Button } from "@shadcn/button"
 import { Input } from "@shadcn/input"
 import { Checkbox } from "@shadcn/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shadcn/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shadcn/card"
+
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, CreditCard } from "lucide-react"
 import { toast } from "sonner"
@@ -99,18 +99,18 @@ export function PaymentSettingsForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div>
+      <div className="mb-6">
+        <h3 className="text-lg font-medium flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
           تنظیمات پرداخت
-        </CardTitle>
-        <CardDescription>
+        </h3>
+        <p className="text-sm text-muted-foreground mt-1">
           تنظیمات واحد پول، مالیات و روش‌های پرداخت
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
+        </p>
+      </div>
+      
+      <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             {/* Currency Settings */}
@@ -234,7 +234,6 @@ export function PaymentSettingsForm() {
             </Button>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+    </div>
   )
 }
