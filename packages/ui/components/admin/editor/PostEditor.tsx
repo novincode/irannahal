@@ -133,10 +133,6 @@ export function PostEditor({
   submitLabel = "ذخیره",
   className
 }: PostEditorProps) {
-  console.log('=== POSTEDITOR DEBUG ===')
-  console.log('PostEditor received postType:', postType)
-  console.log('PostEditor received initialData keys:', Object.keys(initialData))
-  
   const store = usePostEditorStore()
   const sensors = useSensors(useSensor(PointerSensor))
 
@@ -153,7 +149,6 @@ export function PostEditor({
       (postType && postType !== lastPostTypeRef.current && postType !== '')
     
     if (shouldInitialize && postType) {
-      console.log('PostEditor initialize effect running with postType:', postType)
       store.initialize(postType, initialData)
       initializedRef.current = true
       initialDataRef.current = initialData
@@ -173,15 +168,10 @@ export function PostEditor({
 
   // Handle form submission
   const handleSubmit = form.handleSubmit(async (data) => {
-    console.log('Form submission started with data:', data)
-    console.log('categoryIds type and value:', typeof data.categoryIds, data.categoryIds)
-    console.log('tagIds type and value:', typeof data.tagIds, data.tagIds)
-
     store.setSaving(true)
     try {
       await onSubmit?.(data)
       store.markClean()
-      console.log('Form submission successful')
     } catch (error) {
       console.error('Failed to save:', error)
       throw error // Re-throw to show user the error
@@ -237,8 +227,13 @@ export function PostEditor({
     store.moveBlock(activeId, targetColumn, overIndex)
   }
 
+  // Don't render if store isn't properly initialized
+  if (!store.postType && !postType) {
+    return <div className="post-editor-loading">Loading editor...</div>
+  }
+
   return (
-    <div className={cn("post-editor", className)}>
+    <div className={cn("post-editor", className)} key={`editor-${postType || 'default'}`}>
       <FormProvider {...form}>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Toolbar at top */}

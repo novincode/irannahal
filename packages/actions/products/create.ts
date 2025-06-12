@@ -13,6 +13,12 @@ export const createProduct = withRole(["admin", "author"])(async (user: UserSche
   // Validate input (already typed, but keeps runtime safety)
   const input = productEditorSchema.parse(data)
 
+  // Merge infoTable into meta for storage
+  const combinedMeta = { ...input.meta }
+  if (input.infoTable && Array.isArray(input.infoTable)) {
+    combinedMeta.infoTable = input.infoTable
+  }
+
   // Insert product with new fields
   const [product] = await db
     .insert(products)
@@ -67,10 +73,10 @@ export const createProduct = withRole(["admin", "author"])(async (user: UserSche
   }
 
   // Insert meta fields (ACF-style)
-  if (input.meta) {
-    const metaRows = flattenMeta(input.meta).map(({ key, value }: { key: string; value: any }) => ({
+  if (combinedMeta) {
+    const metaRows = flattenMeta(combinedMeta).map(({ key, value }: { key: string; value: any }) => ({
       key,
-      value: typeof value === "string" ? value : String(value),
+      value: String(value), // flattenMeta already handles complex objects/arrays as JSON
     }))
     if (metaRows.length) {
       await createFields({ type: "product", entityId: product.id, fields: metaRows })

@@ -16,11 +16,23 @@ export function flattenMeta(meta: Record<string, any>): MetaFieldRow[] {
     for (const [key, value] of Object.entries(obj)) {
       const fullKey = prefix ? `${prefix}.${key}` : key
 
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      if (value === null || value === undefined) {
+        // Store null/undefined as empty string
+        result.push({
+          key: fullKey,
+          value: ''
+        })
+      } else if (Array.isArray(value)) {
+        // Store arrays as JSON strings
+        result.push({
+          key: fullKey,
+          value: JSON.stringify(value)
+        })
+      } else if (typeof value === 'object') {
         // Recursively flatten nested objects
         flatten(value, fullKey)
       } else {
-        // Add leaf values
+        // Add primitive values
         result.push({
           key: fullKey,
           value: value
@@ -55,7 +67,24 @@ export function metaRowsToObject(rows: { key: string; value: string | null }[]):
 
     // Set the final value
     const finalKey = keys[keys.length - 1]
-    current[finalKey] = value
+    
+    // Try to parse value as JSON (for arrays and objects), otherwise use as-is
+    if (value === null || value === '') {
+      current[finalKey] = null
+    } else {
+      try {
+        // Check if it looks like JSON (starts with [ or {)
+        if ((value.startsWith('[') && value.endsWith(']')) || 
+            (value.startsWith('{') && value.endsWith('}'))) {
+          current[finalKey] = JSON.parse(value)
+        } else {
+          current[finalKey] = value
+        }
+      } catch {
+        // If JSON parsing fails, use the raw value
+        current[finalKey] = value
+      }
+    }
   }
 
   return result

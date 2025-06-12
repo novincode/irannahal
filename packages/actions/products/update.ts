@@ -13,6 +13,12 @@ export const updateProduct = withRole(["admin", "author"])(async (user, data: Pr
   // Only update allowed fields
   const { id, meta, downloads: downloadsInput, categoryIds, tagIds, mediaIds, infoTable, ...rest } = data
   
+  // Merge infoTable into meta for storage
+  const combinedMeta = { ...meta }
+  if (infoTable && Array.isArray(infoTable)) {
+    combinedMeta.infoTable = infoTable
+  }
+  
   // Extract only database-compatible fields
   const updateData = {
     name: rest.name,
@@ -78,13 +84,13 @@ export const updateProduct = withRole(["admin", "author"])(async (user, data: Pr
   }
 
   // Update meta fields (ACF-style)
-  if (meta) {
+  if (combinedMeta) {
     // Remove all previous meta fields for this product (efficient)
     await deleteProductFields(id)
     // Insert new meta fields
-    const metaRows = flattenMeta(meta).map(({ key, value }: { key: string; value: any }) => ({
+    const metaRows = flattenMeta(combinedMeta).map(({ key, value }: { key: string; value: any }) => ({
       key,
-      value: typeof value === "string" ? value : String(value),
+      value: String(value), // flattenMeta already handles complex objects/arrays as JSON
     }))
     if (metaRows.length) {
       await updateFields({ type: "product", entityId: id, fields: metaRows })

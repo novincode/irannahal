@@ -201,6 +201,69 @@ export async function getProducts<TWith extends ProductRelations>(
   return transformed as ProductWithDynamicRelations<TWith>[]
 }
 
+// Admin version - returns ALL products regardless of status
+export async function getAllProducts<TWith extends ProductRelations>(
+  opts?: { with?: TWith }
+): Promise<ProductWithDynamicRelations<TWith>[]> {
+  // Build the with clause conditionally
+  const withClause: any = {}
+  
+  if (opts?.with?.categories) {
+    withClause.categories = {
+      with: {
+        category: true
+      }
+    }
+  }
+  
+  if (opts?.with?.tags) {
+    withClause.tags = {
+      with: {
+        tag: true
+      }
+    }
+  }
+  
+  if (opts?.with?.downloads) {
+    withClause.downloads = true
+  }
+  
+  if (opts?.with?.media) {
+    withClause.media = true
+  }
+  
+  if (opts?.with?.meta) {
+    withClause.meta = true
+  }
+  
+  if (opts?.with?.thumbnail) {
+    withClause.thumbnail = true
+  }
+
+  const results = await db.query.products.findMany({
+    // No where clause - get ALL products
+    with: withClause,
+    orderBy: [desc(products.createdAt)] // Order by newest first
+  })
+  
+  // Transform the results to match expected format
+  const transformed = results.map((result: any) => {
+    const item: any = { ...result }
+    
+    if (opts?.with?.categories && result.categories) {
+      item.categories = result.categories.map((pc: any) => pc.category)
+    }
+    
+    if (opts?.with?.tags && result.tags) {
+      item.tags = result.tags.map((pt: any) => pt.tag)
+    }
+    
+    return item
+  })
+  
+  return transformed as ProductWithDynamicRelations<TWith>[]
+}
+
 // ==========================================
 // ADVANCED FILTERING & ARCHIVE FUNCTIONS
 // ==========================================

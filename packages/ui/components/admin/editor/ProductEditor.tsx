@@ -77,9 +77,6 @@ export function ProductEditor({
     }
   }
 
-  console.log('=== PRODUCTEDITOR DEBUG ===')
-  console.log('ProductEditor passing postType to PostEditor:', "product")
-
   return (
     <PostEditor
       postType="product"
