@@ -28,6 +28,7 @@ export type MetaFieldType =
   | "switch"
   | "key-value" 
   | "repeater"
+  | "discount-table"
 
 export interface MetaFieldOption {
   label: string
@@ -167,7 +168,6 @@ export function MetaField({
               onCheckedChange={onChange}
               disabled={disabled}
             />
-            <Label htmlFor={name}>{label}</Label>
           </div>
         )
 
@@ -180,7 +180,6 @@ export function MetaField({
               onCheckedChange={onChange}
               disabled={disabled}
             />
-            <Label htmlFor={name}>{label}</Label>
           </div>
         )
 
@@ -280,6 +279,91 @@ export function MetaField({
             >
               <Plus className="h-4 w-4 mr-2" />
               افزودن
+            </Button>
+          </div>
+        )
+
+      case "discount-table":
+        const discountConditions = Array.isArray(value) ? value : []
+        return (
+          <div className="space-y-2">
+            {discountConditions.map((condition: { minQuantity: number; type: 'percentage' | 'fixed'; value: number }, index: number) => (
+              <Card key={index}>
+                <CardContent className="p-3">
+                  <div className="grid grid-cols-3 gap-2 items-center">
+                    <div>
+                      <Label className="text-xs">حداقل تعداد</Label>
+                      <Input
+                        type="number"
+                        placeholder="1"
+                        value={condition.minQuantity || ""}
+                        onChange={(e) => {
+                          const newConditions = [...discountConditions]
+                          newConditions[index] = { ...condition, minQuantity: Number(e.target.value) }
+                          onChange(newConditions)
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">نوع تخفیف</Label>
+                      <Select
+                        value={condition.type || "percentage"}
+                        onValueChange={(value: 'percentage' | 'fixed') => {
+                          const newConditions = [...discountConditions]
+                          newConditions[index] = { ...condition, type: value }
+                          onChange(newConditions)
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentage">درصد</SelectItem>
+                          <SelectItem value="fixed">مبلغ ثابت</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">مقدار</Label>
+                      <div className="flex gap-1">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={condition.value || ""}
+                          onChange={(e) => {
+                            const newConditions = [...discountConditions]
+                            newConditions[index] = { ...condition, value: Number(e.target.value) }
+                            onChange(newConditions)
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            const newConditions = discountConditions.filter((_, i) => i !== index)
+                            onChange(newConditions)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newConditions = [...discountConditions, { minQuantity: 1, type: 'percentage', value: 0 }]
+                onChange(newConditions)
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              افزودن شرط تخفیف
             </Button>
           </div>
         )

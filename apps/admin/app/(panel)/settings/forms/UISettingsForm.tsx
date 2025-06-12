@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@shadcn/button"
 import { Input } from "@shadcn/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shadcn/select"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shadcn/card"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@shadcn/form"
 import { Loader2, Palette } from "lucide-react"
 import { toast } from "sonner"
@@ -92,19 +93,19 @@ export function UISettingsForm() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h3 className="text-lg font-medium flex items-center gap-2">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
           <Palette className="h-5 w-5" />
           تنظیمات رابط کاربری
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        </CardTitle>
+        <CardDescription>
           تم، رنگ‌ها و طراحی کلی فروشگاه را مدیریت کنید
-        </p>
-      </div>
-      
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             {/* Theme Settings */}
             <div className="space-y-4">
@@ -275,6 +276,7 @@ export function UISettingsForm() {
             </Button>
           </form>
         </Form>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

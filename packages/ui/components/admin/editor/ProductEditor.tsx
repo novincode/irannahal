@@ -53,7 +53,7 @@ export function ProductEditor({
     if (store.layout.left.length === 0 && store.layout.right.length === 0) {
       store.setLayout(DEFAULT_PRODUCT_LAYOUT)
     }
-  }, [])
+  }, []) // Remove store dependencies to prevent re-runs
   
   // Inject additional props into blocks
   React.useEffect(() => {
@@ -64,10 +64,9 @@ export function ProductEditor({
       onCreateTag,
       onMediaUpload,
       onMediaRemove,
-      submitLabel,
-      isLoading: store.isSaving
+      submitLabel
     })
-  }, [categories, tags, allowTagCreate, onCreateTag, onMediaUpload, onMediaRemove, submitLabel, store.isSaving])
+  }, [categories, tags, allowTagCreate, onCreateTag, onMediaUpload, onMediaRemove, submitLabel])
   
   const handleSubmit = async (data: ProductEditorData) => {
     try {

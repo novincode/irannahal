@@ -31,31 +31,27 @@ export interface PostEditorProps {
 // ==========================================
 
 function useFormSync(form: any, store: any) {
-  // Sync form changes to store
+  // Initialize form with store data once
   React.useEffect(() => {
-    const subscription = form.watch((value: any) => {
-      // Debounce updates to avoid excessive re-renders
-      const timeoutId = setTimeout(() => {
-        store.updateField('root', value)
-      }, 100)
-      
-      return () => clearTimeout(timeoutId)
-    })
-    
-    return () => subscription.unsubscribe()
-  }, [form.watch, store.updateField])
+    if (store.postData && Object.keys(store.postData).length > 0) {
+      form.reset(store.postData, { keepDefaultValues: true })
+    }
+  }, [store.postData]) // React to store data changes
   
-  // Sync store changes to form
+  // Handle external store updates (like when data is loaded)
   React.useEffect(() => {
-    const unsubscribe = usePostEditorStore.subscribe(
-      (state) => state.postData,
-      (postData: any) => {
-        form.reset(postData, { keepDirty: true })
+    const unsubscribe = store.subscribe?.(
+      (state: any) => ({ data: state.postData, isDirty: state.isDirty }),
+      (value: any) => {
+        // Only update form if it's not currently being edited
+        if (!value.isDirty && value.data && Object.keys(value.data).length > 0) {
+          form.reset(value.data, { keepDefaultValues: true })
+        }
       }
     )
     
-    return unsubscribe
-  }, [form.reset])
+    return unsubscribe || (() => {})
+  }, [form, store])
 }
 
 // ==========================================
@@ -77,7 +73,7 @@ export function PostEditor({
   // Initialize store on mount
   React.useEffect(() => {
     store.initialize(postType, initialData)
-  }, [postType, initialData, store.initialize])
+  }, [postType, JSON.stringify(initialData)]) // React to data changes but use JSON.stringify to avoid object reference issues
   
   // Setup form with default schema if none provided
   const form = useForm({
@@ -114,7 +110,7 @@ export function PostEditor({
       
       return unsubscribe
     }
-  }, [onUpdate, store.subscribe])
+  }, [onUpdate]) // Remove store.subscribe dependency
   
   // Handle drag and drop
   const handleDragEnd = (event: DragEndEvent) => {

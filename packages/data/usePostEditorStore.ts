@@ -78,154 +78,161 @@ export interface PostEditorState {
 // STORE
 // ==========================================
 
+const storeImpl = (set: any, get: any) => ({
+  // Initial state
+  postType: '',
+  postData: {},
+  originalData: {},
+  isDirty: false,
+  activeTab: '',
+  layout: {
+    left: [] as Array<{ id: string; blockType: string }>,
+    right: [] as Array<{ id: string; blockType: string }>
+  },
+  registeredBlocks: new Map<string, BlockDefinition>(),
+  visibleBlocks: [] as string[],
+  blockProps: {} as Record<string, any>,
+  isLoading: false,
+  isSaving: false,
+
+  // Subscribe method for external components - will be set after store creation
+  subscribe: (selector: (state: PostEditorState) => any, callback: (value: any) => void): (() => void) => {
+    return () => {}
+  },
+
+  // Actions
+  initialize: (postType: string, initialData = {}) => {
+    set({
+      postType,
+      postData: { ...initialData },
+      originalData: { ...initialData },
+      isDirty: false,
+      isLoading: false,
+      isSaving: false,
+      layout: getDefaultLayoutForPostType(postType)
+    })
+  },
+
+  updateField: (path: string, value: any) => {
+    set((state: PostEditorState) => {
+      const newData = { ...state.postData }
+      setNestedValue(newData, path, value)
+      
+      return {
+        postData: newData,
+        isDirty: !deepEqual(newData, state.originalData)
+      }
+    })
+  },
+
+  resetForm: () => {
+    const { originalData } = get()
+    set({
+      postData: { ...originalData },
+      isDirty: false
+    })
+  },
+
+  setActiveTab: (tab: string) => set({ activeTab: tab }),
+
+  addBlock: (blockType: string, column: 'left' | 'right', position?: number) => {
+    set((state: PostEditorState) => {
+      const blockId = `${blockType}-${Date.now()}`
+      const newBlock = { id: blockId, blockType }
+      const columnBlocks = [...state.layout[column]]
+      
+      if (position !== undefined) {
+        columnBlocks.splice(position, 0, newBlock)
+      } else {
+        columnBlocks.push(newBlock)
+      }
+
+      return {
+        layout: {
+          ...state.layout,
+          [column]: columnBlocks
+        }
+      }
+    })
+  },
+
+  removeBlock: (blockId: string) => {
+    set((state: PostEditorState) => {
+      const newLayout = {
+        left: state.layout.left.filter((block: any) => block.id !== blockId),
+        right: state.layout.right.filter((block: any) => block.id !== blockId)
+      }
+      return { layout: newLayout }
+    })
+  },
+
+  moveBlock: (blockId: string, toColumn: 'left' | 'right', position: number) => {
+    set((state: PostEditorState) => {
+      // Find and remove the block from current position
+      let blockToMove: { id: string; blockType: string } | null = null
+      const newLeft = state.layout.left.filter((block: any) => {
+        if (block.id === blockId) {
+          blockToMove = block
+          return false
+        }
+        return true
+      })
+      const newRight = state.layout.right.filter((block: any) => {
+        if (block.id === blockId) {
+          blockToMove = block
+          return false
+        }
+        return true
+      })
+
+      if (!blockToMove) return state
+
+      // Add to new position
+      const targetColumn = toColumn === 'left' ? newLeft : newRight
+      targetColumn.splice(position, 0, blockToMove)
+
+      return {
+        layout: {
+          left: newLeft,
+          right: newRight
+        }
+      }
+    })
+  },
+
+  registerBlock: (definition: BlockDefinition) => {
+    set((state: PostEditorState) => {
+      const newBlocks = new Map(state.registeredBlocks)
+      newBlocks.set(definition.id, definition)
+      return { registeredBlocks: newBlocks }
+    })
+  },
+
+  unregisterBlock: (blockType: string) => {
+    set((state: PostEditorState) => {
+      const newBlocks = new Map(state.registeredBlocks)
+      newBlocks.delete(blockType)
+      return { registeredBlocks: newBlocks }
+    })
+  },
+
+  setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setSaving: (saving: boolean) => set({ isSaving: saving }),
+  markDirty: () => set({ isDirty: true }),
+  markClean: () => set({ isDirty: false }),
+  setLayout: (layout: { left: Array<{ id: string; blockType: string }>; right: Array<{ id: string; blockType: string }> }) => set({ layout }),
+  setBlockProps: (props: Record<string, any>) => set({ blockProps: { ...get().blockProps, ...props } })
+})
+
 export const usePostEditorStore = create<PostEditorState>()(
-  subscribeWithSelector((set, get) => ({
-    // Initial state
-    postType: '',
-    postData: {},
-    originalData: {},
-    isDirty: false,
-    activeTab: '',
-    layout: {
-      left: [],
-      right: []
-    },
-    registeredBlocks: new Map(),
-    visibleBlocks: [],
-    blockProps: {},
-    isLoading: false,
-    isSaving: false,
-
-    // Subscribe method for external components
-    subscribe: (selector: (state: PostEditorState) => any, callback: (value: any) => void) => {
-      // This will be set after store creation
-      return () => {}
-    },
-
-    // Actions
-    initialize: (postType: string, initialData = {}) => {
-      set({
-        postType,
-        postData: { ...initialData },
-        originalData: { ...initialData },
-        isDirty: false,
-        isLoading: false,
-        isSaving: false,
-        layout: getDefaultLayoutForPostType(postType)
-      })
-    },
-
-    updateField: (path: string, value: any) => {
-      set((state) => {
-        const newData = { ...state.postData }
-        setNestedValue(newData, path, value)
-        
-        return {
-          postData: newData,
-          isDirty: !deepEqual(newData, state.originalData)
-        }
-      })
-    },
-
-    resetForm: () => {
-      const { originalData } = get()
-      set({
-        postData: { ...originalData },
-        isDirty: false
-      })
-    },
-
-    setActiveTab: (tab: string) => set({ activeTab: tab }),
-
-    addBlock: (blockType: string, column: 'left' | 'right', position) => {
-      set((state) => {
-        const blockId = `${blockType}-${Date.now()}`
-        const newBlock = { id: blockId, blockType }
-        const columnBlocks = [...state.layout[column]]
-        
-        if (position !== undefined) {
-          columnBlocks.splice(position, 0, newBlock)
-        } else {
-          columnBlocks.push(newBlock)
-        }
-
-        return {
-          layout: {
-            ...state.layout,
-            [column]: columnBlocks
-          }
-        }
-      })
-    },
-
-    removeBlock: (blockId: string) => {
-      set((state) => {
-        const newLayout = {
-          left: state.layout.left.filter(block => block.id !== blockId),
-          right: state.layout.right.filter(block => block.id !== blockId)
-        }
-        return { layout: newLayout }
-      })
-    },
-
-    moveBlock: (blockId: string, toColumn: 'left' | 'right', position: number) => {
-      set((state) => {
-        // Find and remove the block from current position
-        let blockToMove: { id: string; blockType: string } | null = null
-        const newLeft = state.layout.left.filter(block => {
-          if (block.id === blockId) {
-            blockToMove = block
-            return false
-          }
-          return true
-        })
-        const newRight = state.layout.right.filter(block => {
-          if (block.id === blockId) {
-            blockToMove = block
-            return false
-          }
-          return true
-        })
-
-        if (!blockToMove) return state
-
-        // Add to new position
-        const targetColumn = toColumn === 'left' ? newLeft : newRight
-        targetColumn.splice(position, 0, blockToMove)
-
-        return {
-          layout: {
-            left: newLeft,
-            right: newRight
-          }
-        }
-      })
-    },
-
-    registerBlock: (definition: BlockDefinition) => {
-      set((state) => {
-        const newBlocks = new Map(state.registeredBlocks)
-        newBlocks.set(definition.id, definition)
-        return { registeredBlocks: newBlocks }
-      })
-    },
-
-    unregisterBlock: (blockType: string) => {
-      set((state) => {
-        const newBlocks = new Map(state.registeredBlocks)
-        newBlocks.delete(blockType)
-        return { registeredBlocks: newBlocks }
-      })
-    },
-
-    setLoading: (loading: boolean) => set({ isLoading: loading }),
-    setSaving: (saving: boolean) => set({ isSaving: saving }),
-    markDirty: () => set({ isDirty: true }),
-    markClean: () => set({ isDirty: false }),
-    setLayout: (layout) => set({ layout }),
-    setBlockProps: (props) => set({ blockProps: { ...get().blockProps, ...props } })
-  }))
+  subscribeWithSelector(storeImpl)
 )
+
+// Update the subscribe method after store creation
+const originalStore = usePostEditorStore.getState()
+originalStore.subscribe = (selector: (state: PostEditorState) => any, callback: (value: any) => void) => {
+  return usePostEditorStore.subscribe(selector, callback)
+}
 
 // ==========================================
 // UTILITIES

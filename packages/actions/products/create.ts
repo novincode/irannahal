@@ -1,7 +1,7 @@
 'use server'
 import { db } from "@db"
 import { products, productCategories, productTags, media, downloads, meta } from "@db/schema"
-import { productFormSchema, type ProductFormInput } from "./formSchema"
+import { productEditorSchema, type ProductEditorData } from "@ui/components/admin/editor/schemas/editorSchemas"
 import { withRole } from "@actions/utils"
 import { inArray } from "drizzle-orm"
 import type { UserSchema } from "@db/types"
@@ -9,9 +9,9 @@ import { createFields } from "@actions/meta/create"
 import { flattenMeta } from "@actions/meta"
 import { createDownloads } from "@actions/downloads/create"
 
-export const createProduct = withRole(["admin", "author"])(async (user: UserSchema, data: ProductFormInput) => {
+export const createProduct = withRole(["admin", "author"])(async (user: UserSchema, data: ProductEditorData) => {
   // Validate input (already typed, but keeps runtime safety)
-  const input = productFormSchema.parse(data)
+  const input = productEditorSchema.parse(data)
 
   // Insert product with new fields
   const [product] = await db
@@ -22,7 +22,7 @@ export const createProduct = withRole(["admin", "author"])(async (user: UserSche
       description: input.description,
       price: input.price,
       status: input.status,
-      isDownloadable: input.isDownloadable ?? false,
+      isDownloadable: (input.downloads?.length ?? 0) > 0,
       content: input.content,
       thumbnailId: input.thumbnailId ?? null, // Save thumbnailId
     })
@@ -55,13 +55,13 @@ export const createProduct = withRole(["admin", "author"])(async (user: UserSche
       .where(inArray(media.id, input.mediaIds))
   }
 
-  // Insert downloads if product is downloadable
-  if (input.isDownloadable && input.downloads?.length) {
+  // Insert downloads if product has downloads
+  if (input.downloads?.length) {
     // Transform form downloads to DownloadInput format - access properties from validated input
     const downloadInputs = input.downloads.map(download => ({
-      type: download.type as 'file' | 'link',
+      type: download.type,
       url: download.url,
-      maxDownloads: download.maxDownloads ?? 0
+      maxDownloads: download.maxDownloads
     }))
     await createDownloads(product.id, downloadInputs)
   }

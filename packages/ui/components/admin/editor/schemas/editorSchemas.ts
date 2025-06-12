@@ -12,7 +12,9 @@ const downloadSchema = z.object({
   url: z.string().url('آدرس معتبر وارد کنید'),
   description: z.string().optional(),
   size: z.string().optional(),
-  format: z.string().optional()
+  format: z.string().optional(),
+  type: z.enum(['file', 'link']).default('file'),
+  maxDownloads: z.number().min(0).default(0)
 })
 
 const infoTableRowSchema = z.object({

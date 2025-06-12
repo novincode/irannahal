@@ -2,14 +2,14 @@
 import { db } from "@db"
 import { products, productCategories, productTags, media } from "@db/schema"
 import { eq, inArray } from "drizzle-orm"
-import { type ProductFormWithMetaInput } from "./formSchema"
+import { type ProductEditorData } from "@ui/components/admin/editor/schemas/editorSchemas"
 import { withRole } from "@actions/utils"
 import { flattenMeta } from "@actions/meta/utils"
 import { updateFields } from "@actions/meta/update"
 import { deleteProductFields } from "@actions/meta/delete"
 import { updateDownloads } from "@actions/downloads/update"
 
-export const updateProduct = withRole(["admin", "author"])(async (user, data: ProductFormWithMetaInput & { id: string }) => {
+export const updateProduct = withRole(["admin", "author"])(async (user, data: ProductEditorData & { id: string }) => {
   // Only update allowed fields
   const { id, meta, downloads: downloadsInput, categoryIds, tagIds, mediaIds, infoTable, ...rest } = data
   
@@ -21,7 +21,7 @@ export const updateProduct = withRole(["admin", "author"])(async (user, data: Pr
     content: rest.content,
     status: rest.status,
     price: rest.price,
-    isDownloadable: rest.isDownloadable,
+    isDownloadable: (downloadsInput?.length ?? 0) > 0,
     ...(rest.thumbnailId && { thumbnailId: rest.thumbnailId })
   }
   
@@ -66,10 +66,10 @@ export const updateProduct = withRole(["admin", "author"])(async (user, data: Pr
   // Update downloads (remove previous, insert new)
   if (updateData.isDownloadable && downloadsInput) {
     // Transform form downloads to DownloadInput format - access properties from validated input
-    const downloadInputs = downloadsInput.map(download => ({
-      type: download.type as 'file' | 'link',
+    const downloadInputs = downloadsInput.map((download: any) => ({
+      type: download.type,
       url: download.url,
-      maxDownloads: download.maxDownloads ?? 0
+      maxDownloads: download.maxDownloads
     }))
     await updateDownloads(id, downloadInputs)
   } else {

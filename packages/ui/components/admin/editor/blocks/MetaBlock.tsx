@@ -14,9 +14,18 @@ const PRODUCT_META_SCHEMA = {
   general: {
     title: 'عمومی',
     fields: {
+      brand: { type: 'text', label: 'برند', placeholder: 'نام برند محصول' },
+      model: { type: 'text', label: 'مدل', placeholder: 'شماره یا نام مدل' },
+      sku: { type: 'text', label: 'کد محصول (SKU)', placeholder: 'کد یکتای محصول' },
       barcode: { type: 'text', label: 'بارکد', placeholder: 'کد بارکد محصول' },
-      customBadge: { type: 'text', label: 'نشان سفارشی', placeholder: 'مثال: جدید، ویژه' },
-      sku: { type: 'text', label: 'کد محصول (SKU)', placeholder: 'کد یکتای محصول' }
+      customBadge: { type: 'text', label: 'نشان سفارشی', placeholder: 'مثال: جدید، ویژه' }
+    }
+  },
+  pricing: {
+    title: 'قیمت‌گذاری',
+    fields: {
+      priceBeforeOffer: { type: 'number', label: 'قیمت قبل از تخفیف', placeholder: '0' },
+      discountConditions: { type: 'discount-table', label: 'جدول تخفیفات', placeholder: 'شرایط تخفیف بر اساس مقدار' }
     }
   },
   dimensions: {
@@ -39,10 +48,10 @@ const PRODUCT_META_SCHEMA = {
   flags: {
     title: 'سایر',
     fields: {
-      isLimited: { type: 'checkbox', label: 'سری محدود؟' },
-      isDownloadable: { type: 'checkbox', label: 'قابل دانلود؟' },
-      requiresShipping: { type: 'checkbox', label: 'نیاز به ارسال؟', defaultValue: true },
-      isFeatured: { type: 'checkbox', label: 'محصول ویژه؟' }
+      isLimited: { type: 'switch', label: 'سری محدود؟' },
+      isDownloadable: { type: 'switch', label: 'قابل دانلود؟' },
+      requiresShipping: { type: 'switch', label: 'نیاز به ارسال؟', defaultValue: true },
+      isFeatured: { type: 'switch', label: 'محصول ویژه؟' }
     }
   }
 }
