@@ -84,11 +84,8 @@ export function PaymentStep() {
     setIsProcessing(true)
 
     try {
-      // Navigate to payment page with order ID
+      // Navigate to payment page with order ID and selected gateway
       router.push(`/panel/orders/${state.orderId}/payment?gateway=${selectedGateway}`)
-      
-      // Clear cart after successful redirect
-      clearCart()
       
       toast.success('در حال انتقال به درگاه پرداخت...')
     } catch (error) {

@@ -1,52 +1,69 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Button } from '@ui/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ui/components/ui/card'
 import { Separator } from '@ui/components/ui/separator'
 import { ScrollArea } from '@ui/components/ui/scroll-area'
-import { MdVisibility, MdShoppingCart, MdLocationOn, MdLocalShipping, MdArrowBack, MdArrowForward } from 'react-icons/md'
+import { Badge } from '@ui/components/ui/badge'
+import { MdVisibility, MdShoppingCart, MdLocationOn, MdLocalShipping, MdArrowBack, MdArrowForward, MdEdit } from 'react-icons/md'
 import { useCheckout } from '../CheckoutContext'
 import { useCartStore } from '@data/useCartStore'
 import { createOrder } from '@actions/orders/create'
 import { CartSingle } from '@ui/components/products/CartSingle'
+import { calculateCheckoutTotals, validateCheckoutData } from '@actions/checkout/utils'
 import { toast } from 'sonner'
 import { formatPrice } from '@ui/lib/utils'
 import { useRouter } from 'next/navigation'
 
 export function ReviewStep() {
-  const { state, setOrderId, proceedToNext, setStep } = useCheckout()
+  const { state, setOrderId, setCreatingOrder, setStep } = useCheckout()
   const cartItems = useCartStore((s) => s.items)
   const clearCart = useCartStore((s) => s.clearCart)
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
-  const shippingCost = state.selectedShippingMethod?.price || 0
-  const total = subtotal + shippingCost
+  // Calculate secure totals with discounts
+  const checkoutTotals = useMemo(() => {
+    const shippingCost = state.selectedShippingMethod?.price || 0
+    return calculateCheckoutTotals(cartItems, shippingCost)
+  }, [cartItems, state.selectedShippingMethod])
+
+  // Find selected address details
+  const selectedAddress = state.addresses?.find(addr => addr.id === state.selectedAddressId)
 
   const handleCreateOrder = async () => {
     // Prevent duplicate orders
-    if (loading || state.orderId) {
+    if (loading || state.orderId || state.isCreatingOrder) {
       return
     }
     
-    if (!state.selectedAddressId || !state.selectedShippingMethod) {
-      toast.error('لطفاً آدرس و روش ارسال را انتخاب کنید')
+    // Validate checkout data
+    const validation = validateCheckoutData({
+      items: cartItems,
+      addressId: state.selectedAddressId || '',
+      shippingMethod: state.selectedShippingMethod?.id
+    })
+
+    if (!validation.isValid) {
+      validation.errors.forEach(error => toast.error(error))
       return
     }
 
     setLoading(true)
+    setCreatingOrder(true)
+    
     try {
       const orderData = {
-        addressId: state.selectedAddressId,
+        addressId: state.selectedAddressId!,
         items: cartItems.map(item => ({
           productId: item.product.id,
           quantity: item.quantity,
           price: item.price
         })),
-        // Add shipping cost to order somehow - you might need to modify the schema
-        // For now, we'll include it in the total calculation
+        // Include calculated totals for server-side validation
+        expectedTotal: checkoutTotals.total,
+        expectedDiscount: checkoutTotals.discountAmount
       }
 
       const order = await createOrder(orderData)
@@ -54,8 +71,7 @@ export function ReviewStep() {
       if (order?.id) {
         setOrderId(order.id)
         
-        // Clear cart since order is created
-        clearCart()
+        // Don't clear cart here - wait until after successful payment
         
         toast.success('سفارش با موفقیت ثبت شد')
         
@@ -67,6 +83,7 @@ export function ReviewStep() {
       toast.error('خطا در ثبت سفارش')
     } finally {
       setLoading(false)
+      setCreatingOrder(false)
     }
   }
 
@@ -137,7 +154,7 @@ export function ReviewStep() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{state.selectedShippingMethod?.name}</span>
-                    <span>{formatPrice(shippingCost)}</span>
+                    <span>{formatPrice(checkoutTotals.shippingCost)}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {state.selectedShippingMethod?.description}
@@ -157,16 +174,22 @@ export function ReviewStep() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span>قیمت کالاها:</span>
-                  <span>{formatPrice(subtotal)}</span>
+                  <span>{formatPrice(checkoutTotals.subtotal)}</span>
                 </div>
+                {checkoutTotals.discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>تخفیف:</span>
+                    <span>-{formatPrice(checkoutTotals.discountAmount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>هزینه ارسال:</span>
-                  <span>{formatPrice(shippingCost)}</span>
+                  <span>{formatPrice(checkoutTotals.shippingCost)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>مجموع کل:</span>
-                  <span className="text-primary">{formatPrice(total)}</span>
+                  <span className="text-primary">{formatPrice(checkoutTotals.total)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -177,6 +200,7 @@ export function ReviewStep() {
           <Button
             variant="outline"
             onClick={handleBack}
+            disabled={loading || state.isCreatingOrder}
             className="flex items-center gap-2"
           >
             <MdArrowBack className="h-4 w-4" />
@@ -185,11 +209,21 @@ export function ReviewStep() {
           
           <Button 
             onClick={handleCreateOrder} 
-            disabled={loading}
+            disabled={loading || state.isCreatingOrder}
             size="lg"
             className="gap-2"
           >
-            {loading ? 'در حال ثبت سفارش...' : 'ثبت سفارش و ادامه پرداخت'}
+            {loading || state.isCreatingOrder ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                در حال ثبت سفارش...
+              </>
+            ) : (
+              <>
+                ثبت سفارش و ادامه پرداخت
+                <MdArrowForward className="h-4 w-4" />
+              </>
+            )}
             <MdArrowForward className="w-4 h-4" />
           </Button>
         </div>

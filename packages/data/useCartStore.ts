@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { ProductWithDynamicRelations } from '@actions/products/types';
 import { getCart } from '@actions/cart/get';
 import { upsertCart } from '@actions/cart/create';
+import { calculateItemPrice } from '@actions/cart/calculate-item-price';
 
 // Types
 export type CartItem = {
@@ -16,6 +17,8 @@ export type CartState = {
   cartId?: string;
   cartName?: string;
   isDrawerOpen: boolean;
+  isLoading: boolean;
+  isHydrated: boolean;
   addItem: (item: { product: ProductWithDynamicRelations; quantity?: number; price?: number }) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -25,6 +28,8 @@ export type CartState = {
   openDrawer: () => void;
   closeDrawer: () => void;
   toggleDrawer: () => void;
+  setLoading: (loading: boolean) => void;
+  setHydrated: (hydrated: boolean) => void;
 };
 
 export const useCartStore = create<CartState>()(
@@ -34,26 +39,40 @@ export const useCartStore = create<CartState>()(
       cartId: undefined,
       cartName: undefined,
       isDrawerOpen: false,
+      isLoading: false,
+      isHydrated: false,
 
       addItem: ({ product, quantity = 1, price }) => {
         const { items } = get();
         const existing = items.find(i => i.product.id === product.id);
+        
         if (existing) {
+          // For existing items, calculate new effective price with updated quantity
+          const newQuantity = existing.quantity + quantity;
+          const priceCalculation = calculateItemPrice(product, newQuantity);
+          
           set({
             items: items.map(i =>
               i.product.id === product.id
-                ? { ...i, quantity: i.quantity + quantity }
+                ? { 
+                    ...i, 
+                    quantity: newQuantity,
+                    price: priceCalculation.pricePerUnit // Update price per unit based on new quantity
+                  }
                 : i
             ),
           });
         } else {
+          // For new items, ALWAYS calculate effective price based on quantity (ignore passed price)
+          const priceCalculation = calculateItemPrice(product, quantity);
+          
           set({
             items: [
               ...items,
               {
                 product,
                 quantity,
-                price: price ?? product.price,
+                price: priceCalculation.pricePerUnit, // Always use calculated discounted price
               },
             ],
           });
@@ -65,10 +84,20 @@ export const useCartStore = create<CartState>()(
       },
 
       updateQuantity: (productId, quantity) => {
+        const { items } = get();
         set({
-          items: get().items.map(i =>
-            i.product.id === productId ? { ...i, quantity } : i
-          ),
+          items: items.map(i => {
+            if (i.product.id === productId) {
+              // Recalculate price when quantity changes
+              const priceCalculation = calculateItemPrice(i.product, quantity);
+              return { 
+                ...i, 
+                quantity,
+                price: priceCalculation.pricePerUnit
+              };
+            }
+            return i;
+          }),
         });
       },
 
@@ -80,6 +109,10 @@ export const useCartStore = create<CartState>()(
       openDrawer: () => set({ isDrawerOpen: true }),
       closeDrawer: () => set({ isDrawerOpen: false }),
       toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen })),
+      
+      setLoading: (loading: boolean) => set({ isLoading: loading }),
+      
+      setHydrated: (hydrated: boolean) => set({ isHydrated: hydrated }),
     }),
     {
       name: 'cart-storage',

@@ -10,7 +10,8 @@ const page = async () => {
 
   const products = await getProducts({
     with: {
-      thumbnail: true
+      thumbnail: true,
+      meta: true
     }
   })
   return (

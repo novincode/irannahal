@@ -47,8 +47,8 @@ export function ProductSingle({ product }: ProductSingleProps) {
     try {
       addItem({ 
         product, 
-        quantity,
-        price: discountResult.finalPrice // Use the discounted price
+        quantity
+        // Don't pass price - let cart store calculate discounts
       })
       
       // Small delay for user feedback, then open drawer
@@ -258,9 +258,9 @@ export function ProductSingle({ product }: ProductSingleProps) {
             <h3 className="text-xl font-semibold mt-8 mb-4">اطلاعات بیشتر</h3>
             <Separator className="mb-6" />
             <dl className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
-              {infoTable.map((item: {label: string, value: string}, idx: number) => (
+              {infoTable.map((item: {key: string, value: string}, idx: number) => (
                 <Fragment key={idx}>
-                  <dt className="font-medium text-muted-foreground">{item.label}:</dt>
+                  <dt className="font-medium text-muted-foreground">{item.key}:</dt>
                   <dd>{item.value}</dd>
                 </Fragment>
               ))}

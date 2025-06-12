@@ -2,15 +2,18 @@
 import type { ProductWithDynamicRelations } from "@actions/products/types"
 import { Card, CardContent, CardFooter } from "@shadcn/card"
 import { Button } from "@shadcn/button"
+import { Badge } from "@shadcn/badge"
 import { ShoppingCartIcon } from "lucide-react"
 import NextLink from "next/link"
 import Image from "next/image"
 import { getProductPageUrl } from "@actions/products/utils"
-import { useCartStore } from "@data/useCartStore" // Try relative import if alias fails
+import { useCartStore } from "@data/useCartStore"
+import { getProductDisplayPrice } from "@actions/cart/calculate-item-price"
 import { useState } from "react"
+import { formatPrice } from "@ui/lib/utils"
 
 interface ProductCardProps {
-  product: ProductWithDynamicRelations<{ thumbnail: true }>
+  product: ProductWithDynamicRelations<{ thumbnail: true, meta: true }>
   featured?: boolean
 }
 
@@ -21,10 +24,18 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
   const openDrawer = useCartStore((s: any) => s.openDrawer)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Calculate display price with discount info
+  const priceInfo = getProductDisplayPrice(product, 1)
+
   const handleAddToCart = async () => {
     setIsLoading(true)
     try {
-      addItem({ product })
+      // Add item - let cart store calculate the discounted price
+      addItem({ 
+        product,
+        quantity: 1
+        // Don't pass price - let cart store calculate discounts
+      })
       // Small delay for user feedback, then open drawer
       setTimeout(() => {
         openDrawer()
@@ -73,9 +84,25 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
         
         {/* Price */}
         <div className="mt-auto">
-          <div className="font-semibold text-lg">
-            {product.price?.toLocaleString()} تومان
-          </div>
+          {priceInfo.showDiscount ? (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="font-semibold text-lg text-primary">
+                  {formatPrice(priceInfo.effectivePrice)}
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {priceInfo.savingsText}
+                </Badge>
+              </div>
+              <div className="text-sm text-muted-foreground line-through">
+                {formatPrice(priceInfo.originalPrice)}
+              </div>
+            </div>
+          ) : (
+            <div className="font-semibold text-lg">
+              {formatPrice(product.price || 0)}
+            </div>
+          )}
         </div>
       </CardContent>
       

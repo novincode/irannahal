@@ -11,18 +11,42 @@ import { PaymentStep } from '@ui/components/checkout/steps/PaymentStep'
 import { useCheckout } from '@ui/components/checkout/CheckoutContext'
 import { Container } from '@ui/components/ui/container'
 import { useCartStore } from '@data/useCartStore'
+import { useCartHydration } from '@ui/hooks/useCartHydration'
 import { Card, CardContent } from '@ui/components/ui/card'
 import { Button } from '@ui/components/ui/button'
 import { MdOutlineShoppingCart } from 'react-icons/md'
+import Loader from '@ui/components/shared/Loader'
 import Link from 'next/link'
 
 function CheckoutContent() {
   const { state } = useCheckout()
-  const items = useCartStore((s) => s.items)
-  const isEmpty = items.length === 0
+  const { isHydrated, isLoading, hasItems } = useCartHydration()
 
-  // Show empty cart message if no items
-  if (isEmpty) {
+  // Show loading state while cart is hydrating
+  if (isLoading || !isHydrated) {
+    return (
+      <Container className="py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">تکمیل خرید</h1>
+            <p className="text-muted-foreground">
+              برای تکمیل خرید خود مراحل زیر را طی کنید
+            </p>
+          </div>
+          
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Loader />
+              <p className="text-muted-foreground mt-4">در حال بارگذاری سبد خرید...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </Container>
+    )
+  }
+
+  // Show empty cart message if no items after hydration
+  if (!hasItems) {
     return (
       <Container className="py-8">
         <div className="max-w-4xl mx-auto">

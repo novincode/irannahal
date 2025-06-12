@@ -27,8 +27,8 @@ export function PanelSidebar({ className }: PanelSidebarProps) {
     <aside className={cn('w-64 flex flex-col', className)}>
       {/* User Profile Section */}
       <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-4 space-x-reverse">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2">
             <Avatar className="h-12 w-12">
               <AvatarImage src={session?.user?.image || ''} alt={session?.user?.name || ''} />
               <AvatarFallback>

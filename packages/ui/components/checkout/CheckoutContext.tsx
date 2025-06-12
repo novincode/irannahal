@@ -24,6 +24,7 @@ export function CheckoutProvider({ children, initialAuthenticated = false }: Che
   const [state, setState] = useState<CheckoutState>({
     currentStep: initialAuthenticated ? 'address' : 'auth',
     isAuthenticated: initialAuthenticated,
+    isCreatingOrder: false
   })
 
   const setStep = (step: CheckoutStep) => {
@@ -48,6 +49,10 @@ export function CheckoutProvider({ children, initialAuthenticated = false }: Che
 
   const setOrderId = (orderId: string) => {
     setState(prev => ({ ...prev, orderId }))
+  }
+
+  const setCreatingOrder = (isCreating: boolean) => {
+    setState(prev => ({ ...prev, isCreatingOrder: isCreating }))
   }
 
   const setAddresses = (addresses: AddressSchema[]) => {
@@ -89,6 +94,7 @@ export function CheckoutProvider({ children, initialAuthenticated = false }: Che
     setSelectedShipping,
     setOrderId,
     setAddresses,
+    setCreatingOrder,
     canProceedToStep,
     proceedToNext,
   }

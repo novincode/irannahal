@@ -120,12 +120,13 @@ export function getProductPageUrl(slug: string): string {
  * Extract meta data from product for consistent access
  */
 export function extractProductMeta(product: any): Record<string, string> {
-  return product.meta?.reduce((acc: Record<string, string>, metaItem: any) => {
+  const result = product.meta?.reduce((acc: Record<string, string>, metaItem: any) => {
     if (metaItem.key && metaItem.value) {
       acc[metaItem.key] = metaItem.value
     }
     return acc
   }, {} as Record<string, string>) || {}
+  return result
 }
 
 /**

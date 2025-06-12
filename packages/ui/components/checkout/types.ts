@@ -19,6 +19,7 @@ export type CheckoutState = {
   orderId?: string
   addresses?: AddressSchema[]
   addressesLoaded?: boolean
+  isCreatingOrder?: boolean
 }
 
 export type CheckoutContextType = {
@@ -29,6 +30,7 @@ export type CheckoutContextType = {
   setSelectedShipping: (method: ShippingMethod) => void
   setOrderId: (orderId: string) => void
   setAddresses: (addresses: AddressSchema[]) => void
+  setCreatingOrder: (isCreating: boolean) => void
   canProceedToStep: (step: CheckoutStep) => boolean
   proceedToNext: () => void
 }
