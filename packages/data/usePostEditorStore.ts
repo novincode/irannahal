@@ -102,15 +102,25 @@ const storeImpl = (set: any, get: any) => ({
 
   // Actions
   initialize: (postType: string, initialData = {}) => {
+    console.log('=== STORE INITIALIZE DEBUG ===')
+    console.log('Initializing store with postType:', postType)
+    console.log('Initializing store with initialData:', initialData)
+    
+    // Don't allow empty postType to overwrite a valid one
+    const currentState = get()
+    const shouldUpdatePostType = postType && (postType !== currentState.postType || !currentState.postType)
+    
     set({
-      postType,
+      postType: shouldUpdatePostType ? postType : currentState.postType,
       postData: { ...initialData },
       originalData: { ...initialData },
       isDirty: false,
       isLoading: false,
       isSaving: false,
-      layout: getDefaultLayoutForPostType(postType)
+      layout: getDefaultLayoutForPostType(shouldUpdatePostType ? postType : currentState.postType)
     })
+    
+    console.log('Store initialized with postType:', shouldUpdatePostType ? postType : currentState.postType)
   },
 
   updateField: (path: string, value: any) => {

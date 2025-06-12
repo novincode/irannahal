@@ -91,7 +91,7 @@ export function MediaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col">
+      <DialogContent className=" w-[90vw] h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{selectLabel}</DialogTitle>
         </DialogHeader>

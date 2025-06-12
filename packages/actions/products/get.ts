@@ -12,7 +12,6 @@ import type {
   ProductWithDynamicRelations,
   ProductRelations
 } from "./types"
-import { productWith } from "./types"
 
 // ==========================================
 // CORE PRODUCT FETCHING FUNCTIONS
@@ -21,33 +20,63 @@ import { productWith } from "./types"
 export async function getProductById(id: string) {
   const result = await db.query.products.findFirst({
     where: eq(products.id, id),
-    with: productWith({
-      categories: true,
-      tags: true,
+    with: {
+      categories: {
+        with: {
+          category: true
+        }
+      },
+      tags: {
+        with: {
+          tag: true
+        }
+      },
       downloads: true,
       media: true,
       meta: true,
       thumbnail: true,
-    }),
+    },
   })
 
-  return result || null
+  if (!result) return null
+
+  // Transform the result to match expected format
+  return {
+    ...result,
+    categories: (result as any).categories?.map((pc: any) => pc.category) || [],
+    tags: (result as any).tags?.map((pt: any) => pt.tag) || [],
+  }
 }
 
 export async function getProductBySlug(slug: string) {
   const result = await db.query.products.findFirst({
     where: eq(products.slug, slug),
-    with: productWith({
-      categories: true,
-      tags: true,
+    with: {
+      categories: {
+        with: {
+          category: true
+        }
+      },
+      tags: {
+        with: {
+          tag: true
+        }
+      },
       downloads: true,
       media: true,
       meta: true,
       thumbnail: true,
-    }),
+    },
   })
 
-  return result || null
+  if (!result) return null
+
+  // Transform the result to match expected format
+  return {
+    ...result,
+    categories: (result as any).categories?.map((pc: any) => pc.category) || [],
+    tags: (result as any).tags?.map((pt: any) => pt.tag) || [],
+  }
 }
 
 // Generic product fetching function with optional relations
@@ -55,21 +84,121 @@ export async function getProduct<TWith extends ProductRelations>(
   id: string,
   opts?: { with?: TWith }
 ): Promise<ProductWithDynamicRelations<TWith> | null> {
+  // Build the with clause conditionally
+  const withClause: any = {}
+  
+  if (opts?.with?.categories) {
+    withClause.categories = {
+      with: {
+        category: true
+      }
+    }
+  }
+  
+  if (opts?.with?.tags) {
+    withClause.tags = {
+      with: {
+        tag: true
+      }
+    }
+  }
+  
+  if (opts?.with?.downloads) {
+    withClause.downloads = true
+  }
+  
+  if (opts?.with?.media) {
+    withClause.media = true
+  }
+  
+  if (opts?.with?.meta) {
+    withClause.meta = true
+  }
+  
+  if (opts?.with?.thumbnail) {
+    withClause.thumbnail = true
+  }
+
   const result = await db.query.products.findFirst({
     where: eq(products.id, id),
-    with: opts?.with,
+    with: withClause,
   })
-  return result as unknown as ProductWithDynamicRelations<TWith> | null
+  
+  if (!result) return null
+
+  // Transform the result to match expected format
+  const transformed: any = { ...result }
+  
+  if (opts?.with?.categories && (result as any).categories) {
+    transformed.categories = (result as any).categories.map((pc: any) => pc.category)
+  }
+  
+  if (opts?.with?.tags && (result as any).tags) {
+    transformed.tags = (result as any).tags.map((pt: any) => pt.tag)
+  }
+  
+  return transformed as ProductWithDynamicRelations<TWith>
 }
 
 export async function getProducts<TWith extends ProductRelations>(
   opts?: { with?: TWith }
 ): Promise<ProductWithDynamicRelations<TWith>[]> {
-  const result = await db.query.products.findMany({
+  // Build the with clause conditionally
+  const withClause: any = {}
+  
+  if (opts?.with?.categories) {
+    withClause.categories = {
+      with: {
+        category: true
+      }
+    }
+  }
+  
+  if (opts?.with?.tags) {
+    withClause.tags = {
+      with: {
+        tag: true
+      }
+    }
+  }
+  
+  if (opts?.with?.downloads) {
+    withClause.downloads = true
+  }
+  
+  if (opts?.with?.media) {
+    withClause.media = true
+  }
+  
+  if (opts?.with?.meta) {
+    withClause.meta = true
+  }
+  
+  if (opts?.with?.thumbnail) {
+    withClause.thumbnail = true
+  }
+
+  const results = await db.query.products.findMany({
     where: eq(products.status, 'active'),
-    with: opts?.with,
+    with: withClause,
   })
-  return result as unknown as ProductWithDynamicRelations<TWith>[]
+  
+  // Transform the results to match expected format
+  const transformed = results.map((result: any) => {
+    const item: any = { ...result }
+    
+    if (opts?.with?.categories && result.categories) {
+      item.categories = result.categories.map((pc: any) => pc.category)
+    }
+    
+    if (opts?.with?.tags && result.tags) {
+      item.tags = result.tags.map((pt: any) => pt.tag)
+    }
+    
+    return item
+  })
+  
+  return transformed as ProductWithDynamicRelations<TWith>[]
 }
 
 // ==========================================
@@ -241,22 +370,37 @@ export async function getProductsArchive(filters: ProductFilterParams = {}): Pro
   // Get products with full relations using the query builder
   const productsWithRelations = await db.query.products.findMany({
     where: conditions.length > 0 ? and(...conditions) : undefined,
-    with: productWith({
-      categories: true,
-      tags: true,
+    with: {
+      categories: {
+        with: {
+          category: true
+        }
+      },
+      tags: {
+        with: {
+          tag: true
+        }
+      },
       thumbnail: true,
       meta: true,
-    }),
+    },
     orderBy: [orderBy],
     limit,
     offset,
   })
 
+  // Transform the results to match expected format
+  const transformedProducts = productsWithRelations.map((result: any) => ({
+    ...result,
+    categories: result.categories?.map((pc: any) => pc.category) || [],
+    tags: result.tags?.map((pt: any) => pt.tag) || [],
+  }))
+
   // Get available filters
   const availableFilters = await getAvailableFilters(filters)
 
   return {
-    products: productsWithRelations as any,
+    products: transformedProducts,
     pagination: {
       page,
       limit,

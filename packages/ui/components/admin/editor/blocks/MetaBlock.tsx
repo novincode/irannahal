@@ -115,6 +115,7 @@ export function MetaBlock({ control, postType, blockId, onUpdate, schema }: Meta
                             value={field.value}
                             onChange={(value: any) => {
                               field.onChange(value)
+                              // Also trigger store update for dirty state
                               onUpdate?.(`meta.${fieldKey}`, value)
                             }}
                           />

@@ -12,6 +12,39 @@ import type { TagWithDynamicRelations } from "@actions/tags/types"
 import type { ProductEditorData } from "@ui/components/admin/editor/schemas/editorSchemas"
 
 // ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+function extractInfoTableFromMeta(metaRows: any[]): any[] {
+  // Look for meta fields that start with 'infoTable.'
+  const infoTableEntries = metaRows.filter(row => 
+    row.key && row.key.startsWith('infoTable.')
+  )
+  
+  // Group by index and convert to info table format
+  const tableMap: Record<string, any> = {}
+  
+  infoTableEntries.forEach(row => {
+    const match = row.key.match(/^infoTable\.(\d+)\.(key|value)$/)
+    if (match) {
+      const index = match[1]
+      const field = match[2]
+      
+      if (!tableMap[index]) {
+        tableMap[index] = { id: `info-${index}` }
+      }
+      
+      tableMap[index][field] = row.value
+    }
+  })
+  
+  // Convert to array and filter complete entries
+  return Object.values(tableMap).filter(item => 
+    item.key && item.value
+  )
+}
+
+// ==========================================
 // TYPES
 // ==========================================
 
@@ -94,7 +127,7 @@ export function EditProductPage({
       
       // Meta and complex fields
       meta: product.meta ? metaRowsToObject(product.meta) : {},
-      infoTable: [], // This would come from meta if stored there
+      infoTable: extractInfoTableFromMeta(product.meta || []),
       downloads: Array.isArray(product.downloads) ? product.downloads.map(d => ({
         id: d.id,
         name: d.url.split('/').pop() || 'Download', // Extract filename from URL

@@ -149,7 +149,7 @@ export function CategoriesBlock({
               <ScrollArea className="h-48 border rounded-md p-3">
                 <div className="space-y-2">
                   {categories.map((category) => (
-                    <div key={category.id} className="flex items-center space-x-2 space-x-reverse">
+                    <div key={category.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`category-${category.id}`}
                         checked={selectedIds.includes(category.id)}
