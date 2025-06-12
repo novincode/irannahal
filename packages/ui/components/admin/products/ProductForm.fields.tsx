@@ -1,5 +1,6 @@
 import * as React from "react"
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@ui/components/ui/form"
+import { Controller } from "react-hook-form"
 import { CategorySelectorField, TagSelectorField } from "../shared"
 import { ProductFormWithMetaInput } from "@actions/products/formSchema"
 import type { CategoryWithDynamicRelations } from "@actions/categories/types";
@@ -15,6 +16,11 @@ import { AttachmentFilesField } from "../shared/DownloadFilesField"
 import { ThumbnailSelectorField } from "../shared/ThumbnailSelectorField"
 import { Button } from "@ui/components/ui/button"
 import { ArrayFieldDnd } from "../shared/ArrayFieldDnd"
+import { Card, CardContent, CardHeader, CardTitle } from "@ui/components/ui/card"
+import { Badge } from "@ui/components/ui/badge"
+import { Separator } from "@ui/components/ui/separator"
+import { Trash2, Calculator, Percent, DollarSign, AlertCircle, GripVertical } from "lucide-react"
+import { Alert, AlertDescription } from "@ui/components/ui/alert"
 
 export function ProductCategoriesField({
   categories,
@@ -151,6 +157,7 @@ export function ProductMetaTabs({ control }: { control: any }) {
         <TabsTrigger value="general">عمومی</TabsTrigger>
         <TabsTrigger value="dimensions">ابعاد و وزن</TabsTrigger>
         <TabsTrigger value="warranty">گارانتی و ارسال</TabsTrigger>
+        <TabsTrigger value="discounts">تخفیفات</TabsTrigger>
         <TabsTrigger value="flags">سایر</TabsTrigger>
       </TabsList>
       <TabsContent value="general" className="flex-1">
@@ -160,6 +167,23 @@ export function ProductMetaTabs({ control }: { control: any }) {
               <FormLabel>قیمت</FormLabel>
               <FormControl><Input type="number" {...field} /></FormControl>
               <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={control} name="meta.priceBeforeOffer" render={({ field }) => (
+            <FormItem>
+              <FormLabel>قیمت قبل از تخفیف (اختیاری)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  {...field} 
+                  onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} 
+                  placeholder="برای نمایش تخفیف وارد کنید"
+                />
+              </FormControl>
+              <FormMessage />
+              <p className="text-xs text-muted-foreground">
+                اگر وارد کنید، قیمت اصلی با خط خورده نمایش داده می‌شود
+              </p>
             </FormItem>
           )} />
           <FormField control={control} name="meta.brand" render={({ field }) => (
@@ -259,6 +283,118 @@ export function ProductMetaTabs({ control }: { control: any }) {
           )} />
         </div>
       </TabsContent>
+      <TabsContent value="discounts" className="flex-1">
+        <div className="space-y-4">
+          <div className="text-sm text-muted-foreground mb-4">
+            <p>تخفیفات کمیتی: براساس تعداد خریداری شده، تخفیف اعمال می‌شود.</p>
+          </div>
+          
+          <FormField control={control} name="meta.discountConditions" render={() => (
+            <div className="space-y-4">
+              <ArrayFieldDnd
+                control={control}
+                name="meta.discountConditions"
+                emptyItem={() => ({ minQuantity: 1, type: "percentage", value: 0 })}
+                renderItem={(item, idx, { remove, field, dragHandleProps }) => (
+                  <Card className="relative">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Calculator className="h-4 w-4" />
+                        شرط تخفیف #{idx + 1}
+                        <Badge variant="outline" className="mr-auto">
+                          {control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? (
+                            <><Percent className="h-3 w-3 ml-1" />درصدی</>
+                          ) : (
+                            <><DollarSign className="h-3 w-3 ml-1" />ثابت</>
+                          )}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <FormLabel className="text-xs text-muted-foreground">حداقل تعداد</FormLabel>
+                          <Input
+                            type="number"
+                            min="1"
+                            {...control.register(`meta.discountConditions.${idx}.minQuantity`, { valueAsNumber: true })}
+                            placeholder="مثلاً 5"
+                          />
+                        </div>
+                        
+                        <div>
+                          <FormLabel className="text-xs text-muted-foreground">نوع تخفیف</FormLabel>
+                          <Controller
+                            name={`meta.discountConditions.${idx}.type`}
+                            control={control}
+                            defaultValue="percentage"
+                            render={({ field }) => (
+                              <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="percentage">درصدی</SelectItem>
+                                  <SelectItem value="fixed">مقدار ثابت</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
+                        
+                        <div>
+                          <FormLabel className="text-xs text-muted-foreground">
+                            مقدار{" "}
+                            {control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? "(درصد)" : "(تومان)"}
+                          </FormLabel>
+                          <Input
+                            type="number"
+                            min="0"
+                            max={control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? "100" : undefined}
+                            {...control.register(`meta.discountConditions.${idx}.value`, { valueAsNumber: true })}
+                            placeholder={control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? "مثلاً 10" : "مثلاً 50000"}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Preview */}
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <p className="text-xs text-muted-foreground">پیش‌نمایش:</p>
+                        <p className="text-sm">
+                          با خرید {control._getWatch(`meta.discountConditions.${idx}.minQuantity`) || 1} عدد یا بیشتر،{" "}
+                          {control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" 
+                            ? `${control._getWatch(`meta.discountConditions.${idx}.value`) || 0}% تخفیف`
+                            : `${(control._getWatch(`meta.discountConditions.${idx}.value`) || 0).toLocaleString()} تومان تخفیف`
+                          } دریافت کنید.
+                        </p>
+                      </div>
+                      
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={remove}
+                        className="absolute top-2 left-2"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+                addLabel="افزودن شرط تخفیف"
+              />
+              
+              {/* Help text */}
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  شرایط تخفیف به ترتیب اولویت اعمال می‌شوند. شرط با بیشترین تعداد که مطابقت داشته باشد، اعمال خواهد شد.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )} />
+        </div>
+      </TabsContent>
       <TabsContent value="flags" className="flex-1">
         <div className="space-y-3">
           <FormField control={control} name="meta.isLimited" render={({ field }) => (
@@ -330,3 +466,114 @@ export function ProductAttachmentsField({ form }: { form: any }) {
 
 export function ProductThumbnailField({ form }: { form: any }) {
   return <ThumbnailSelectorField form={form} /> }
+
+export function ProductDiscountsField({ control }: { control: any }) {
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-muted-foreground mb-4">
+        <p>تخفیفات کمیتی: براساس تعداد خریداری شده، تخفیف اعمال می‌شود.</p>
+      </div>
+      
+      <FormField control={control} name="meta.discountConditions" render={() => (
+        <div className="space-y-4">
+          <ArrayFieldDnd
+            control={control}
+            name="meta.discountConditions"
+            emptyItem={() => ({ minQuantity: 1, type: "percentage", value: 0 })}
+            renderItem={(item, idx, { remove, field, dragHandleProps }) => (
+              <Card className="relative">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    شرط تخفیف #{idx + 1}
+                    <Badge variant="outline" className="mr-auto">
+                      {control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? (
+                        <><Percent className="h-3 w-3 ml-1" />درصدی</>
+                      ) : (
+                        <><DollarSign className="h-3 w-3 ml-1" />ثابت</>
+                      )}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <FormLabel className="text-xs text-muted-foreground">حداقل تعداد</FormLabel>
+                      <Input
+                        type="number"
+                        min="1"
+                        {...control.register(`meta.discountConditions.${idx}.minQuantity`, { valueAsNumber: true })}
+                        placeholder="مثلاً 5"
+                      />
+                    </div>
+                    
+                    <div>
+                      <FormLabel className="text-xs text-muted-foreground">نوع تخفیف</FormLabel>
+                      <Select
+                        value={control._getWatch(`meta.discountConditions.${idx}.type`) || "percentage"}
+                        onValueChange={(value) => control.setValue(`meta.discountConditions.${idx}.type`, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentage">درصدی</SelectItem>
+                          <SelectItem value="fixed">مقدار ثابت</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <FormLabel className="text-xs text-muted-foreground">
+                        مقدار{" "}
+                        {control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? "(درصد)" : "(تومان)"}
+                      </FormLabel>
+                      <Input
+                        type="number"
+                        min="0"
+                        max={control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? "100" : undefined}
+                        {...control.register(`meta.discountConditions.${idx}.value`, { valueAsNumber: true })}
+                        placeholder={control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" ? "مثلاً 10" : "مثلاً 50000"}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Preview */}
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <p className="text-xs text-muted-foreground">پیش‌نمایش:</p>
+                    <p className="text-sm">
+                      با خرید {control._getWatch(`meta.discountConditions.${idx}.minQuantity`) || 1} عدد یا بیشتر،{" "}
+                      {control._getWatch(`meta.discountConditions.${idx}.type`) === "percentage" 
+                        ? `${control._getWatch(`meta.discountConditions.${idx}.value`) || 0}% تخفیف`
+                        : `${(control._getWatch(`meta.discountConditions.${idx}.value`) || 0).toLocaleString()} تومان تخفیف`
+                      } دریافت کنید.
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={remove}
+                    className="absolute top-2 left-2"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            addLabel="افزودن شرط تخفیف"
+          />
+          
+          {/* Help text */}
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              شرایط تخفیف به ترتیب اولویت اعمال می‌شوند. شرط با بیشترین تعداد که مطابقت داشته باشد، اعمال خواهد شد.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )} />
+    </div>
+  )
+}

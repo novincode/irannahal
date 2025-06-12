@@ -8,6 +8,7 @@ import { MinusIcon, PlusIcon, ShoppingCartIcon } from "lucide-react"
 import Image from "next/image"
 import { useState, Fragment } from "react"
 import { useCartStore } from "@data/useCartStore"
+import { calculateDiscountedPrice, getDiscountPreviewText } from "@actions/products/utils"
 
 interface ProductSingleProps {
   product: ProductWithDynamicRelations<{ thumbnail: true, meta: true }>
@@ -54,9 +55,23 @@ export function ProductSingle({ product }: ProductSingleProps) {
       return [];
     }
   };
+
+  const getDiscountConditions = () => {
+    try {
+      return meta.discountConditions ? JSON.parse(meta.discountConditions) : [];
+    } catch {
+      return [];
+    }
+  };
   
   const dimensions = getDimensions();
   const infoTable = getInfoTable();
+  const discountConditions = getDiscountConditions();
+  
+  // Calculate price with quantity-based discounts
+  const priceBeforeOffer = meta.priceBeforeOffer ? Number(meta.priceBeforeOffer) : null;
+  const discountResult = calculateDiscountedPrice(product.price, quantity, discountConditions);
+  const discountPreview = getDiscountPreviewText(product.price, quantity, discountConditions);
   
   const incrementQuantity = () => setQuantity(prev => prev + 1)
   const decrementQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1)
@@ -67,7 +82,7 @@ export function ProductSingle({ product }: ProductSingleProps) {
       addItem({ 
         product, 
         quantity,
-        price: product.price 
+        price: discountResult.finalPrice // Use the discounted price
       })
       
       // Small delay for user feedback, then open drawer
@@ -112,8 +127,54 @@ export function ProductSingle({ product }: ProductSingleProps) {
           
           <Separator className="my-4" />
           
-          <div className="text-2xl font-semibold mb-6">
-            {product.price?.toLocaleString()} تومان
+          {/* Price Section */}
+          <div className="mb-6">
+            {priceBeforeOffer && priceBeforeOffer > product.price && (
+              <div className="text-lg text-muted-foreground line-through mb-1">
+                {priceBeforeOffer.toLocaleString()} تومان
+              </div>
+            )}
+            
+            <div className="flex items-center gap-3 mb-2">
+              <div className="text-2xl font-semibold">
+                {discountResult.finalPrice.toLocaleString()} تومان
+              </div>
+              
+              {discountResult.totalDiscount > 0 && (
+                <Badge variant="destructive" className="text-sm">
+                  {discountResult.appliedDiscount?.type === "percentage" 
+                    ? `${discountResult.appliedDiscount.value}% تخفیف`
+                    : `${discountResult.totalDiscount.toLocaleString()} تومان تخفیف`
+                  }
+                </Badge>
+              )}
+            </div>
+            
+            {discountPreview && (
+              <div className="text-sm text-green-600 mb-2">
+                {discountPreview}
+              </div>
+            )}
+            
+            {/* Show next discount tier if available */}
+            {discountConditions.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {(() => {
+                  const nextTier = discountConditions
+                    .filter((d: any) => d.minQuantity > quantity)
+                    .sort((a: any, b: any) => a.minQuantity - b.minQuantity)[0];
+                  
+                  if (nextTier) {
+                    return `با خرید ${nextTier.minQuantity} عدد، ${
+                      nextTier.type === "percentage" 
+                        ? `${nextTier.value}% تخفیف` 
+                        : `${nextTier.value.toLocaleString()} تومان تخفیف`
+                    } دریافت کنید`;
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
           </div>
           
           {meta.customBadge && (

@@ -52,9 +52,16 @@ export function TagSelectorField({
   
   // Selected tags as objects
   const selectedTags = React.useMemo(() => {
-    // Always derive from current selection for live reactivity
+    // First try selectedObjects (for existing data)
+    if (selectedObjects?.length) {
+      const fromSelectedObjects = selectedObjects.filter(tag => selectedIds.has(tag.id))
+      if (fromSelectedObjects.length > 0) {
+        return fromSelectedObjects
+      }
+    }
+    // Then try allTags (for newly added/searched tags)
     return allTags.filter(tag => selectedIds.has(tag.id))
-  }, [allTags, selectedIds])
+  }, [selectedObjects, allTags, selectedIds])
   
   // Debounced input for search
   const debouncedInput = useDebounce(input, 500)
@@ -175,37 +182,25 @@ export function TagSelectorField({
     }
   }, [searchResults])
 
-  // Ensure all selected tags are present in allTags on mount/prop change
+  // Initialize allTags with selectedObjects on mount or when selectedObjects changes
   React.useEffect(() => {
-    // If selectedObjects is provided, merge them in
     if (selectedObjects && selectedObjects.length > 0) {
       setAllTags(prev => {
         const existingIds = new Set(prev.map(t => t.id))
         const newTags = selectedObjects.filter(t => !existingIds.has(t.id))
-        return [...prev, ...newTags]
+        return prev.length === 0 ? selectedObjects : [...prev, ...newTags]
       })
     }
   }, [selectedObjects])
-
-  // If value changes and some IDs are missing from allTags, add them from selectedObjects if possible
-  React.useEffect(() => {
-    if (selectedObjects && selectedObjects.length > 0 && value.length > 0) {
-      setAllTags(prev => {
-        const existingIds = new Set(prev.map(t => t.id))
-        const neededTags = selectedObjects.filter(t => value.includes(t.id) && !existingIds.has(t.id))
-        return [...prev, ...neededTags]
-      })
-    }
-  }, [value, selectedObjects])
 
   return (
     <div className={cn("w-full", className)}>
       {/* Selected tags */}
       {selectedTags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {selectedTags.map(tag => (
+          {selectedTags.map((tag, index) => (
             <Badge 
-              key={tag.id} 
+              key={tag.id || `selected-tag-${index}`} 
               variant="secondary"
               className="text-xs cursor-pointer" 
               onClick={() => !disabled && handleRemoveTag(tag.id)}
@@ -263,9 +258,9 @@ export function TagSelectorField({
           
           {filteredTags.length > 0 && (
             <CommandGroup>
-              {filteredTags.map(tag => (
+              {filteredTags.map((tag, index) => (
                 <CommandItem
-                  key={tag.id}
+                  key={tag.id || `filtered-tag-${index}`}
                   onSelect={() => handleAddTag(tag)}
                   disabled={selectedIds.has(tag.id) || disabled}
                   className={cn(

@@ -2,6 +2,24 @@ import { z } from "zod"
 import { productStatusEnum } from "@db/schema"
 import { slugify, isValidSlug } from "@ui/lib/slug"
 
+// --- Discount Condition Schema ---
+export const discountConditionSchema = z.object({
+  minQuantity: z.number().min(1, "حداقل تعداد باید ۱ یا بیشتر باشد"),
+  type: z.enum(["percentage", "fixed"], {
+    errorMap: () => ({ message: "نوع تخفیف نامعتبر است" })
+  }),
+  value: z.number().min(0, "مقدار تخفیف نمی‌تواند منفی باشد"),
+  // For percentage: max 100, for fixed: no specific limit but should be reasonable
+}).refine((data) => {
+  if (data.type === "percentage" && data.value > 100) {
+    return false;
+  }
+  return true;
+}, {
+  message: "درصد تخفیف نمی‌تواند بیش از ۱۰۰ باشد",
+  path: ["value"]
+});
+
 // --- Product Meta Schema ---
 export const productFormMetaSchema = z.object({
   brand: z.string().optional(), // Brand name
@@ -19,6 +37,12 @@ export const productFormMetaSchema = z.object({
   isLimited: z.boolean().default(false).optional(), // true if limited edition
   customBadge: z.string().optional(), // e.g., "پرفروش", "محبوب", etc.
   flags: z.array(z.enum(["new", "exclusive", "eco", "bestseller"])).optional(),
+
+  /**
+   * Pricing & Discounts
+   */
+  priceBeforeOffer: z.number().min(0, "قیمت قبل از تخفیف نمی‌تواند منفی باشد").optional(),
+  discountConditions: z.array(discountConditionSchema).optional(),
 
   /**
    * Loop-style key/value table like "مشخصات فنی" or "اطلاعات بیشتر"

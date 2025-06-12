@@ -2,14 +2,14 @@
 import { db } from "@db"
 import { products, productCategories, productTags, media } from "@db/schema"
 import { eq, inArray } from "drizzle-orm"
-import { ProductFormInput } from "./formSchema"
+import { ProductFormWithMetaInput } from "./formSchema"
 import { withRole } from "@actions/utils"
 import { flattenMeta } from "@actions/meta/utils"
 import { updateFields } from "@actions/meta/update"
 import { deleteProductFields } from "@actions/meta/delete"
 import { updateDownloads } from "@actions/downloads/update"
 
-export const updateProduct = withRole(["admin", "author"])(async (user, data: ProductFormInput & { id: string }) => {
+export const updateProduct = withRole(["admin", "author"])(async (user, data: ProductFormWithMetaInput & { id: string }) => {
   // Only update allowed fields
   const { id, meta, downloads: downloadsInput, categoryIds, tagIds, mediaIds, ...updateData } = data
   await db.update(products).set(updateData).where(eq(products.id, id))

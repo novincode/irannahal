@@ -2,7 +2,7 @@
 import { ProductForm } from '@ui/components/admin/products/ProductForm'
 import type { ProductWithDynamicRelations } from '@actions/products/types';
 import { updateProduct } from '@actions/products/update'
-import type { UpdateProductInput } from '@actions/products/formSchema';
+import type { ProductFormWithMetaInput } from '@actions/products/formSchema';
 import { toast } from "sonner"
 
 export type EditProductClientProps = {
@@ -11,7 +11,7 @@ export type EditProductClientProps = {
 }
 
 export default function EditProductClient({ initialData, productId }: EditProductClientProps) {
-  const handleSubmit = async (data: UpdateProductInput) => {
+  const handleSubmit = async (data: ProductFormWithMetaInput) => {
     try {
       await updateProduct({ ...data, id: productId })
       toast.success("محصول با موفقیت ویرایش شد.")

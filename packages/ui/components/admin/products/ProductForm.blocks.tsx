@@ -3,7 +3,7 @@ import type { CategoryWithDynamicRelations } from "@actions/categories/types";
 import type { TagWithDynamicRelations } from "@actions/tags/types";
 import { CategorySelectorField } from "../shared/CategorySelectorField";
 import { TagSelectorField } from "../shared/TagSelectorField";
-import { ProductStatusField, ProductMainInfoFields, ProductMetaTabs, ProductInfoTableField, ProductDownloadsField, ProductAttachmentsField, ProductThumbnailField } from "./ProductForm.fields";
+import { ProductStatusField, ProductMainInfoFields, ProductMetaTabs, ProductInfoTableField, ProductDownloadsField, ProductAttachmentsField, ProductThumbnailField, ProductDiscountsField } from "./ProductForm.fields";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { cn } from "@ui/lib/utils";
@@ -20,6 +20,7 @@ const DEFAULT_FIELDS = [
   { id: "mainInfo", type: "mainInfo" },
   { id: "meta", type: "meta" },
   { id: "infoTable", type: "infoTable" },
+  { id: "discounts", type: "discounts" },
   { id: "attachments", type: "attachments" },
   { id: "downloads", type: "downloads" },
 ];
@@ -30,6 +31,7 @@ export const blockTitles: Record<string, string> = {
   mainInfo: "اطلاعات کلی",
   meta: "ویژگی‌های محصول",
   infoTable: "مشخصات فنی / اطلاعات بیشتر",
+  discounts: "تخفیفات کمیتی",
   attachments: "دانلودهای رایگان",
   downloads: "دانلودهای پس از خرید",
   thumbnail: "تصویر شاخص",
@@ -75,6 +77,8 @@ export function renderBlockContent(
       return <ProductMetaTabs control={form?.control} />;
     case "infoTable":
       return <ProductInfoTableField control={form?.control} />;
+    case "discounts":
+      return <ProductDiscountsField control={form?.control} />;
     case "downloads":
       return <ProductDownloadsField control={form?.control} form={form} />;
     case "attachments":

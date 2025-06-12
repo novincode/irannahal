@@ -73,6 +73,7 @@ const DEFAULT_COLUMNS = {
     { id: "mainInfo", type: "mainInfo" },
     { id: "meta", type: "meta" },
     { id: "infoTable", type: "infoTable" },
+    { id: "discounts", type: "discounts" },
     { id: "attachments", type: "attachments" },
     { id: "downloads", type: "downloads" },
   ],
@@ -97,12 +98,26 @@ export const ProductForm = React.forwardRef<ProductFormHandle, ProductFormProps>
       // Helper to extract IDs and objects from join-table or direct array
       function extractIdsAndObjects<T extends { id: any }>(arr: any[] | undefined, pivotKey: string): { ids: any[], objects: T[] } {
         if (!Array.isArray(arr)) return { ids: [], objects: [] };
-        // Join-table shape: [{..., [pivotKey]: { ... }}]
+        
+        // Check for join-table shape: [{..., [pivotKey]: { ... }}]
         if (arr.length > 0 && arr[0][pivotKey]) {
           const objects = arr.map((item) => item[pivotKey]);
           const ids = objects.map((obj: any) => obj.id);
           return { ids, objects };
         }
+        
+        // Check for simple join-table shape: [{ productId: '...', categoryId: '...' }]
+        // This happens when the relation doesn't include the related object
+        if (arr.length > 0 && arr[0].categoryId && pivotKey === 'category') {
+          const ids = arr.map((item) => item.categoryId);
+          return { ids, objects: [] }; // No objects available in this format
+        }
+        
+        if (arr.length > 0 && arr[0].tagId && pivotKey === 'tag') {
+          const ids = arr.map((item) => item.tagId);
+          return { ids, objects: [] }; // No objects available in this format
+        }
+        
         // Direct array of objects
         const objects = arr as T[];
         const ids = objects.map((obj) => obj.id);
