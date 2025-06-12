@@ -2,12 +2,14 @@
 
 import React from 'react'
 import { Button } from '@ui/components/ui/button'
+import { Badge } from '@ui/components/ui/badge'
 import { MdAdd, MdRemove, MdClose } from 'react-icons/md'
 import { useCartStore } from '@data/useCartStore'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ProductWithDynamicRelations } from '@actions/products/types'
 import { formatPrice } from '@ui/lib/utils'
+import { getItemDiscountInfo } from '@actions/cart/utils'
 
 interface CartSingleProps {
   product: ProductWithDynamicRelations
@@ -51,7 +53,13 @@ export function CartSingle({
 
   const thumbnailUrl = (product as any).thumbnail?.url || '/placeholder.png'
   const productUrl = `/products/${product.slug}`
-  const totalPrice = price * quantity
+  
+  // Calculate discount for this item using utility
+  const { discountResult, originalTotal, hasDiscount } = getItemDiscountInfo({ 
+    product, 
+    quantity, 
+    price 
+  })
 
   return (
     <div className={`group relative p-4 hover:bg-muted/20 transition-colors ${className}`}>
@@ -128,11 +136,26 @@ export function CartSingle({
 
       {/* Item Total */}
       <div className="mt-3 flex justify-between items-center text-sm">
-        <span className="text-muted-foreground">
-          {quantity} × {formatPrice(price)}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span className="text-muted-foreground">
+            {quantity} × {formatPrice(price)}
+          </span>
+          {discountResult.hasDiscount && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground line-through">
+                {formatPrice(originalTotal)}
+              </span>
+              <Badge variant="destructive" className="text-xs px-1 py-0">
+                {discountResult.appliedDiscount?.type === "percentage" 
+                  ? `${discountResult.appliedDiscount.value}%`
+                  : `${formatPrice(discountResult.totalDiscount)} تخفیف`
+                }
+              </Badge>
+            </div>
+          )}
+        </div>
         <span className="font-semibold">
-          {formatPrice(totalPrice)}
+          {formatPrice(discountResult.finalPrice)}
         </span>
       </div>
     </div>

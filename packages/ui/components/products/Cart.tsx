@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { cn, formatPrice } from '@ui/lib/utils'
 import { useCartStore } from '@data/useCartStore'
 import { CartSingle } from './CartSingle'
+import { calculateCartTotals } from '@actions/cart/utils'
 
 export function Cart() {
   // Zustand selectors
@@ -16,7 +17,11 @@ export function Cart() {
 
   const isEmpty = items.length === 0
   const totalItems = items.reduce((total, item) => total + item.quantity, 0)
-  const subtotal = items.reduce((total, item) => total + (item.price * item.quantity), 0)
+  
+  // Calculate totals with discounts using utility
+  const cartCalculations = React.useMemo(() => {
+    return calculateCartTotals(items)
+  }, [items])
 
   const handleClear = () => {
     clearCart()
@@ -78,12 +83,33 @@ export function Cart() {
           </ScrollArea>
           {/* Footer Summary */}
           <div className="space-y-4 p-4 bg-muted/20 rounded-lg  mt-auto">
+            {cartCalculations.hasDiscount && (
+              <>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>قیمت کل:</span>
+                  <span className="line-through">
+                    {formatPrice(cartCalculations.subtotalBeforeDiscount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-green-600">
+                  <span>تخفیف:</span>
+                  <span>
+                    -{formatPrice(cartCalculations.totalDiscount)}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="flex items-center justify-between text-lg">
               <span className="font-medium">مجموع کل:</span>
               <span className="font-bold text-xl text-primary">
-                {formatPrice(subtotal)}
+                {formatPrice(cartCalculations.subtotalAfterDiscount)}
               </span>
             </div>
+            {cartCalculations.hasDiscount && (
+              <div className="text-xs text-green-600 text-center">
+                شما {formatPrice(cartCalculations.totalDiscount)} صرفه‌جویی کرده‌اید!
+              </div>
+            )}
             <Button 
               className="w-full h-12 text-base font-medium"
               onClick={handleCheckout}

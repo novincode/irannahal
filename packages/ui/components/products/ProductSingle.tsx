@@ -8,7 +8,7 @@ import { MinusIcon, PlusIcon, ShoppingCartIcon } from "lucide-react"
 import Image from "next/image"
 import { useState, Fragment } from "react"
 import { useCartStore } from "@data/useCartStore"
-import { calculateDiscountedPrice, getDiscountPreviewText } from "@actions/products/utils"
+import { calculateDiscountedPrice, getDiscountPreviewText, extractProductMeta, parseDiscountConditions, parseInfoTable, parseDimensions } from "@actions/products/utils"
 
 interface ProductSingleProps {
   product: ProductWithDynamicRelations<{ thumbnail: true, meta: true }>
@@ -28,48 +28,14 @@ export function ProductSingle({ product }: ProductSingleProps) {
   const existingItem = items.find(item => item.product.id === product.id)
   const totalQuantityInCart = existingItem?.quantity || 0
   
-  // Process meta data to make it easier to work with
-  const meta = product.meta?.reduce((acc, item) => {
-    if (item.key && item.value) {
-      acc[item.key] = item.value;
-    }
-    return acc;
-  }, {} as Record<string, string>) || {};
-  
-  // Helper to parse complex meta fields like dimensions
-  const getDimensions = () => {
-    try {
-      const dimensions = meta.dimensions ? JSON.parse(meta.dimensions) : null;
-      return dimensions && dimensions.width 
-        ? { width: dimensions.width, height: dimensions.height, depth: dimensions.depth } 
-        : null;
-    } catch {
-      return null;
-    }
-  };
-  
-  const getInfoTable = () => {
-    try {
-      return meta.infoTable ? JSON.parse(meta.infoTable) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const getDiscountConditions = () => {
-    try {
-      return meta.discountConditions ? JSON.parse(meta.discountConditions) : [];
-    } catch {
-      return [];
-    }
-  };
-  
-  const dimensions = getDimensions();
-  const infoTable = getInfoTable();
-  const discountConditions = getDiscountConditions();
+  // Process meta data using utility functions
+  const meta = extractProductMeta(product)
+  const dimensions = parseDimensions(meta)
+  const infoTable = parseInfoTable(meta)
+  const discountConditions = parseDiscountConditions(meta)
   
   // Calculate price with quantity-based discounts
-  const priceBeforeOffer = meta.priceBeforeOffer ? Number(meta.priceBeforeOffer) : null;
+  const originalPrice = meta.originalPrice ? Number(meta.originalPrice) : null;
   const discountResult = calculateDiscountedPrice(product.price, quantity, discountConditions);
   const discountPreview = getDiscountPreviewText(product.price, quantity, discountConditions);
   
@@ -129,18 +95,23 @@ export function ProductSingle({ product }: ProductSingleProps) {
           
           {/* Price Section */}
           <div className="mb-6">
-            {priceBeforeOffer && priceBeforeOffer > product.price && (
+            {originalPrice && originalPrice > product.price && (
               <div className="text-lg text-muted-foreground line-through mb-1">
-                {priceBeforeOffer.toLocaleString()} تومان
+                قیمت اصلی: {originalPrice.toLocaleString()} تومان
               </div>
             )}
             
+            {/* Show current price per unit */}
+            <div className="text-sm text-muted-foreground mb-1">
+              قیمت واحد: {product.price.toLocaleString()} تومان
+            </div>
+            
             <div className="flex items-center gap-3 mb-2">
               <div className="text-2xl font-semibold">
-                {discountResult.finalPrice.toLocaleString()} تومان
+                مجموع: {discountResult.finalPrice.toLocaleString()} تومان
               </div>
               
-              {discountResult.totalDiscount > 0 && (
+              {discountResult.hasDiscount && (
                 <Badge variant="destructive" className="text-sm">
                   {discountResult.appliedDiscount?.type === "percentage" 
                     ? `${discountResult.appliedDiscount.value}% تخفیف`
@@ -149,6 +120,12 @@ export function ProductSingle({ product }: ProductSingleProps) {
                 </Badge>
               )}
             </div>
+            
+            {discountResult.hasDiscount && (
+              <div className="text-sm text-green-600 font-medium">
+                شما {discountResult.totalDiscount.toLocaleString()} تومان صرفه‌جویی می‌کنید!
+              </div>
+            )}
             
             {discountPreview && (
               <div className="text-sm text-green-600 mb-2">
@@ -296,7 +273,10 @@ export function ProductSingle({ product }: ProductSingleProps) {
         <Card className="p-6 mt-8">
           <h2 className="text-2xl font-semibold mb-4">توضیحات تکمیلی</h2>
           <Separator className="mb-6" />
-          <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: product.content }} />
+          <div 
+            className="prose max-w-none" 
+            dangerouslySetInnerHTML={{ __html: product.content || '' }} 
+          />
         </Card>
       )}
     </div>

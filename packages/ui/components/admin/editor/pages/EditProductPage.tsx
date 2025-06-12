@@ -123,16 +123,7 @@ export function EditProductPage({
 
   const handleSave = async (formData: any) => {
     try {
-      console.log('=== DEBUGGING SAVE ===')
-      console.log('Form data being saved:', formData)
-      console.log('infoTable from form:', formData.infoTable)
-      console.log('meta from form:', formData.meta)
-      
       const result = await updateProductAction({ ...formData, id: product.id })
-      console.log('Product updated successfully:', result)
-      
-      // Don't refresh the page - just show success message
-      // The store will handle the state management
       
       // Show success message
       toast.success("محصول با موفقیت به‌روزرسانی شد")

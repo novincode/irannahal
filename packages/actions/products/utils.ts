@@ -11,6 +11,7 @@ export interface DiscountResult {
   finalPrice: number
   totalDiscount: number
   appliedDiscount: DiscountCondition | null
+  hasDiscount: boolean
 }
 
 /**
@@ -26,7 +27,8 @@ export function calculateDiscountedPrice(
       originalPrice: basePrice,
       finalPrice: basePrice * quantity,
       totalDiscount: 0,
-      appliedDiscount: null
+      appliedDiscount: null,
+      hasDiscount: false
     }
   }
 
@@ -40,7 +42,8 @@ export function calculateDiscountedPrice(
       originalPrice: basePrice,
       finalPrice: basePrice * quantity,
       totalDiscount: 0,
-      appliedDiscount: null
+      appliedDiscount: null,
+      hasDiscount: false
     }
   }
 
@@ -61,7 +64,8 @@ export function calculateDiscountedPrice(
     originalPrice: basePrice,
     finalPrice,
     totalDiscount: discountAmount,
-    appliedDiscount: bestDiscount
+    appliedDiscount: bestDiscount,
+    hasDiscount: discountAmount > 0
   }
 }
 
@@ -110,4 +114,49 @@ export function generateSKU(productName: string, category?: string): string {
  */
 export function getProductPageUrl(slug: string): string {
   return `/products/${slug}`
+}
+
+/**
+ * Extract meta data from product for consistent access
+ */
+export function extractProductMeta(product: any): Record<string, string> {
+  return product.meta?.reduce((acc: Record<string, string>, metaItem: any) => {
+    if (metaItem.key && metaItem.value) {
+      acc[metaItem.key] = metaItem.value
+    }
+    return acc
+  }, {} as Record<string, string>) || {}
+}
+
+/**
+ * Parse discount conditions from meta string
+ */
+export function parseDiscountConditions(meta: Record<string, string>): DiscountCondition[] {
+  try {
+    return meta.discountConditions ? JSON.parse(meta.discountConditions) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Parse info table from meta string
+ */
+export function parseInfoTable(meta: Record<string, string>): Array<{key: string, value: string}> {
+  try {
+    return meta.infoTable ? JSON.parse(meta.infoTable) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Parse dimensions from meta
+ */
+export function parseDimensions(meta: Record<string, string>): { width?: number, height?: number, depth?: number } | null {
+  try {
+    return meta.dimensions ? JSON.parse(meta.dimensions) : null
+  } catch {
+    return null
+  }
 }
