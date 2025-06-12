@@ -15,35 +15,6 @@ import type { ProductEditorData } from "@ui/components/admin/editor/schemas/edit
 // HELPER FUNCTIONS
 // ==========================================
 
-function extractInfoTableFromMeta(metaRows: any[]): any[] {
-  // Look for meta fields that start with 'infoTable.'
-  const infoTableEntries = metaRows.filter(row => 
-    row.key && row.key.startsWith('infoTable.')
-  )
-  
-  // Group by index and convert to info table format
-  const tableMap: Record<string, any> = {}
-  
-  infoTableEntries.forEach(row => {
-    const match = row.key.match(/^infoTable\.(\d+)\.(key|value)$/)
-    if (match) {
-      const index = match[1]
-      const field = match[2]
-      
-      if (!tableMap[index]) {
-        tableMap[index] = { id: `info-${index}` }
-      }
-      
-      tableMap[index][field] = row.value
-    }
-  })
-  
-  // Convert to array and filter complete entries
-  return Object.values(tableMap).filter(item => 
-    item.key && item.value
-  )
-}
-
 // ==========================================
 // TYPES
 // ==========================================
@@ -107,27 +78,30 @@ export function EditProductPage({
     console.log('Extracted categoryIds:', categoryIds)
     console.log('Extracted tagIds:', tagIds)
     
-    const data = {
-      // Basic fields
-      name: product.name || "",
-      slug: product.slug || "",
-      description: product.description || "",
-      price: product.price || 0,
-      
-      // Status fields
-      status: product.status || "draft",
-      
-      // Relations - ensure arrays are never undefined and filter out invalid IDs
-      categoryIds,
-      tagIds,
-      
-      // Media
-      thumbnailId: product.thumbnailId || undefined,
-      mediaIds: Array.isArray(product.media) ? product.media.map((m) => m.id) : [],
-      
       // Meta and complex fields
-      meta: product.meta ? metaRowsToObject(product.meta) : {},
-      infoTable: extractInfoTableFromMeta(product.meta || []),
+      const metaObject = product.meta ? metaRowsToObject(product.meta) : {}
+      
+      const data = {
+        // Basic fields
+        name: product.name || "",
+        slug: product.slug || "",
+        description: product.description || "",
+        price: product.price || 0,
+        
+        // Status fields
+        status: product.status || "draft",
+        
+        // Relations - ensure arrays are never undefined and filter out invalid IDs
+        categoryIds,
+        tagIds,
+        
+        // Media
+        thumbnailId: product.thumbnailId || undefined,
+        mediaIds: Array.isArray(product.media) ? product.media.map((m) => m.id) : [],
+        
+        // Meta and complex fields
+        meta: metaObject,
+        infoTable: metaObject.infoTable || [],
       downloads: Array.isArray(product.downloads) ? product.downloads.map(d => ({
         id: d.id,
         name: d.url.split('/').pop() || 'Download', // Extract filename from URL
@@ -149,12 +123,16 @@ export function EditProductPage({
 
   const handleSave = async (formData: any) => {
     try {
-      console.log('Saving product with data:', formData)
+      console.log('=== DEBUGGING SAVE ===')
+      console.log('Form data being saved:', formData)
+      console.log('infoTable from form:', formData.infoTable)
+      console.log('meta from form:', formData.meta)
+      
       const result = await updateProductAction({ ...formData, id: product.id })
       console.log('Product updated successfully:', result)
       
-      // Refresh the page to get updated data
-      router.refresh()
+      // Don't refresh the page - just show success message
+      // The store will handle the state management
       
       // Show success message
       toast.success("محصول با موفقیت به‌روزرسانی شد")

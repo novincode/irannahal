@@ -22,9 +22,10 @@ const PRODUCT_META_SCHEMA = {
     }
   },
   pricing: {
-    title: 'قیمت‌گذاری',
+    title: 'قیمت‌گذاری پیشرفته',
+    description: 'قیمت اصلی در بخش "اطلاعات کلی" تنظیم می‌شود',
     fields: {
-      priceBeforeOffer: { type: 'number', label: 'قیمت قبل از تخفیف', placeholder: '0' },
+      originalPrice: { type: 'number', label: 'قیمت مثلا قبل از تخفیف', placeholder: '0' },
       discountConditions: { type: 'discount-table', label: 'جدول تخفیفات', placeholder: 'شرایط تخفیف بر اساس مقدار' }
     }
   },
@@ -101,6 +102,11 @@ export function MetaBlock({ control, postType, blockId, onUpdate, schema }: Meta
           return (
             <TabsContent key={tabKey} value={tabKey} className="flex-1">
               <div className="space-y-3">
+                {tabConfig.description && (
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {tabConfig.description}
+                  </p>
+                )}
                 {Object.entries(tabConfig.fields as Record<string, any>).map(([fieldKey, fieldConfig]: [string, any]) => (
                   <FormField
                     key={fieldKey}

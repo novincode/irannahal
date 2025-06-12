@@ -10,6 +10,11 @@ import { deleteProductFields } from "@actions/meta/delete"
 import { updateDownloads } from "@actions/downloads/update"
 
 export const updateProduct = withRole(["admin", "author"])(async (user, data: ProductEditorData & { id: string }) => {
+  console.log('=== UPDATE PRODUCT ACTION ===')
+  console.log('Received data:', data)
+  console.log('infoTable received:', data.infoTable)
+  console.log('meta received:', data.meta)
+  
   // Only update allowed fields
   const { id, meta, downloads: downloadsInput, categoryIds, tagIds, mediaIds, infoTable, ...rest } = data
   
@@ -17,7 +22,10 @@ export const updateProduct = withRole(["admin", "author"])(async (user, data: Pr
   const combinedMeta = { ...meta }
   if (infoTable && Array.isArray(infoTable)) {
     combinedMeta.infoTable = infoTable
+    console.log('Added infoTable to combinedMeta:', combinedMeta.infoTable)
   }
+  
+  console.log('Final combinedMeta:', combinedMeta)
   
   // Extract only database-compatible fields
   const updateData = {
@@ -84,7 +92,8 @@ export const updateProduct = withRole(["admin", "author"])(async (user, data: Pr
   }
 
   // Update meta fields (ACF-style)
-  if (combinedMeta) {
+  if (combinedMeta && Object.keys(combinedMeta).length > 0) {
+    console.log('Flattening meta...')
     // Remove all previous meta fields for this product (efficient)
     await deleteProductFields(id)
     // Insert new meta fields
@@ -92,8 +101,10 @@ export const updateProduct = withRole(["admin", "author"])(async (user, data: Pr
       key,
       value: String(value), // flattenMeta already handles complex objects/arrays as JSON
     }))
+    console.log('Meta rows to save:', metaRows)
     if (metaRows.length) {
       await updateFields({ type: "product", entityId: id, fields: metaRows })
+      console.log('Meta fields saved successfully')
     }
   }
 
