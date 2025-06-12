@@ -1,38 +1,77 @@
-// Utility to flatten meta fields for ACF-style meta storage (deep)
-export function flattenMeta(meta: any, prefix = ""): Array<{ key: string, value: any }> {
-  const result: Array<{ key: string, value: any }> = [];
-  for (const [k, v] of Object.entries(meta || {})) {
-    const key = prefix ? `${prefix}.${k}` : k;
-    if (v === undefined) continue;
-    if (Array.isArray(v)) {
-      // Store arrays as JSON string
-      result.push({ key, value: JSON.stringify(v) });
-    } else if (typeof v === "object" && v !== null) {
-      // Recursively flatten objects
-      result.push(...flattenMeta(v, key));
-    } else {
-      result.push({ key, value: v });
-    }
-  }
-  return result;
+// Meta field utilities for flattening and transforming meta data
+
+export interface MetaFieldRow {
+  key: string
+  value: any
 }
 
-// Utility to convert meta rows to a nested object (for initialData)
-export function metaRowsToObject(rows: Array<{ key: string, value: string }>): Record<string, any> {
+/**
+ * Flatten nested meta object into array of key-value pairs
+ * Converts nested objects like { dimensions: { width: 10 } } to [{ key: "dimensions.width", value: "10" }]
+ */
+export function flattenMeta(meta: Record<string, any>): MetaFieldRow[] {
+  const result: MetaFieldRow[] = []
+
+  function flatten(obj: any, prefix = '') {
+    for (const [key, value] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key
+
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        // Recursively flatten nested objects
+        flatten(value, fullKey)
+      } else {
+        // Add leaf values
+        result.push({
+          key: fullKey,
+          value: value
+        })
+      }
+    }
+  }
+
+  flatten(meta)
+  return result
+}
+
+/**
+ * Convert meta rows back to nested object
+ * Converts [{ key: "dimensions.width", value: "10" }] to { dimensions: { width: 10 } }
+ */
+export function metaRowsToObject(rows: { key: string; value: string | null }[]): Record<string, any> {
   const result: Record<string, any> = {}
+
   for (const { key, value } of rows) {
     const keys = key.split('.')
-    let curr = result
+    let current = result
+
+    // Navigate/create nested structure
     for (let i = 0; i < keys.length - 1; i++) {
-      if (!curr[keys[i]]) curr[keys[i]] = {}
-      curr = curr[keys[i]]
+      const k = keys[i]
+      if (!(k in current)) {
+        current[k] = {}
+      }
+      current = current[k]
     }
-    // Try to parse JSON, fallback to string/primitive
-    let parsed: any = value
-    try {
-      parsed = JSON.parse(value)
-    } catch {}
-    curr[keys[keys.length - 1]] = parsed
+
+    // Set the final value
+    const finalKey = keys[keys.length - 1]
+    current[finalKey] = value
   }
+
+  return result
+}
+
+/**
+ * Merge multiple meta objects, with later objects overriding earlier ones
+ */
+export function mergeMeta(...metaObjects: Record<string, any>[]): Record<string, any> {
+  const result: Record<string, any> = {}
+
+  for (const meta of metaObjects) {
+    if (meta && typeof meta === 'object') {
+      Object.assign(result, meta)
+    }
+  }
+
   return result
 }

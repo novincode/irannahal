@@ -17,7 +17,7 @@ import { relations } from "drizzle-orm"
 export const userRoleEnum = pgEnum("user_role", ["admin", "user", "author", "customer"])
 export type UserRole = typeof userRoleEnum.enumValues[number]
 export const postStatusEnum = pgEnum("post_status", ["draft", "published", "archived"])
-export const productStatusEnum = pgEnum("product_status", ["draft", "active", "inactive"])
+export const productStatusEnum = pgEnum("product_status", ["draft", "active", "inactive", "out_of_stock"])
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video", "file"])
 export const commentTypeEnum = pgEnum("comment_type", ["post", "product"])
 export const metaTypeEnum = pgEnum("meta_type", ["post", "product", "global"])

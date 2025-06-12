@@ -1,0 +1,10 @@
+// Block components for the post editor system
+export { MainInfoBlock } from './MainInfoBlock'
+export { StatusBlock } from './StatusBlock'
+export { CategoriesBlock } from './CategoriesBlock'
+export { TagsBlock } from './TagsBlock'
+export { MetaBlock } from './MetaBlock'
+export { MediaBlock } from './MediaBlock'
+export { InfoTableBlock } from './InfoTableBlock'
+export { DownloadsBlock } from './DownloadsBlock'
+export { ContentBlock } from './ContentBlock'

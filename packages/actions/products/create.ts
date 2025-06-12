@@ -1,12 +1,12 @@
 'use server'
 import { db } from "@db"
 import { products, productCategories, productTags, media, downloads, meta } from "@db/schema"
-import { productFormSchema, ProductFormInput } from "./formSchema"
+import { productFormSchema, type ProductFormInput } from "./formSchema"
 import { withRole } from "@actions/utils"
 import { inArray } from "drizzle-orm"
 import type { UserSchema } from "@db/types"
 import { createFields } from "@actions/meta/create"
-import { flattenMeta } from "@actions/meta/utils"
+import { flattenMeta } from "@actions/meta"
 import { createDownloads } from "@actions/downloads/create"
 
 export const createProduct = withRole(["admin", "author"])(async (user: UserSchema, data: ProductFormInput) => {
@@ -57,12 +57,18 @@ export const createProduct = withRole(["admin", "author"])(async (user: UserSche
 
   // Insert downloads if product is downloadable
   if (input.isDownloadable && input.downloads?.length) {
-    await createDownloads(product.id, input.downloads)
+    // Transform form downloads to DownloadInput format - access properties from validated input
+    const downloadInputs = input.downloads.map(download => ({
+      type: download.type as 'file' | 'link',
+      url: download.url,
+      maxDownloads: download.maxDownloads ?? 0
+    }))
+    await createDownloads(product.id, downloadInputs)
   }
 
   // Insert meta fields (ACF-style)
   if (input.meta) {
-    const metaRows = flattenMeta(input.meta).map(({ key, value }) => ({
+    const metaRows = flattenMeta(input.meta).map(({ key, value }: { key: string; value: any }) => ({
       key,
       value: typeof value === "string" ? value : String(value),
     }))
