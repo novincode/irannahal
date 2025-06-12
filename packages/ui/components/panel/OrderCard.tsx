@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@shadcn/card'
 import { Badge } from '@shadcn/badge'
 import { Button } from '@shadcn/button'
@@ -24,8 +25,6 @@ interface OrderCardProps {
     items: { product: true }
     discount: true
   }>
-  onViewDetails?: (orderId: string) => void
-  onTrackOrder?: (orderId: string) => void
 }
 
 const statusConfig = {
@@ -50,6 +49,13 @@ const statusConfig = {
     bgColor: 'bg-green-50',
     icon: Truck,
   },
+  delivered: {
+    label: 'تحویل داده شده',
+    color: 'bg-green-600',
+    textColor: 'text-green-800',
+    bgColor: 'bg-green-100',
+    icon: Truck,
+  },
   cancelled: {
     label: 'لغو شده',
     color: 'bg-red-500',
@@ -59,7 +65,7 @@ const statusConfig = {
   },
 }
 
-export function OrderCard({ order, onViewDetails, onTrackOrder }: OrderCardProps) {
+export function OrderCard({ order }: OrderCardProps) {
   const status = statusConfig[order.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
   
@@ -145,21 +151,25 @@ export function OrderCard({ order, onViewDetails, onTrackOrder }: OrderCardProps
             variant="outline" 
             size="sm" 
             className="flex-1 gap-2"
-            onClick={() => onViewDetails?.(order.id)}
+            asChild
           >
-            <Eye className="h-4 w-4" />
-            مشاهده جزئیات
+            <Link href={`/panel/orders/${order.id}`}>
+              <Eye className="h-4 w-4" />
+              مشاهده جزئیات
+            </Link>
           </Button>
           
-          {(order.status === 'paid' || order.status === 'shipped') && (
+          {(order.status === 'paid' || order.status === 'shipped' || order.status === 'delivered') && (
             <Button 
               variant="outline" 
               size="sm" 
               className="flex-1 gap-2"
-              onClick={() => onTrackOrder?.(order.id)}
+              asChild
             >
-              <Truck className="h-4 w-4" />
-              پیگیری سفارش
+              <Link href={`/panel/orders/${order.id}/track`}>
+                <Truck className="h-4 w-4" />
+                پیگیری سفارش
+              </Link>
             </Button>
           )}
         </div>

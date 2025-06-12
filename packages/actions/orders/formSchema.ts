@@ -12,14 +12,14 @@ export const createOrderSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   orderId: z.string().uuid("شناسه سفارش نامعتبر است"),
-  status: z.enum(["pending", "paid", "shipped", "cancelled"], {
+  status: z.enum(["pending", "paid", "shipped", "cancelled", "delivered"], {
     errorMap: () => ({ message: "وضعیت سفارش نامعتبر است" })
   }),
 })
 
 export const orderFiltersSchema = z.object({
   userId: z.string().optional(),
-  status: z.enum(["pending", "paid", "shipped", "cancelled"]).optional(),
+  status: z.enum(["pending", "paid", "shipped", "cancelled", "delivered"]).optional(),
   limit: z.number().min(1).max(100).default(20).optional(),
   offset: z.number().min(0).default(0).optional(),
   dateFrom: z.date().optional(),

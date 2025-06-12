@@ -57,13 +57,7 @@ export default function OrdersPageClient({ initialOrders, initialStats }: Orders
     return matchesSearch && matchesStatus
   })
 
-  const handleViewDetails = (orderId: string) => {
-    router.push(`/panel/orders/${orderId}`)
-  }
 
-  const handleTrackOrder = (orderId: string) => {
-    router.push(`/panel/orders/${orderId}/track`)
-  }
 
   return (
     <div className="space-y-6">
@@ -162,6 +156,7 @@ export default function OrdersPageClient({ initialOrders, initialStats }: Orders
                   <SelectItem value="pending">در انتظار پرداخت</SelectItem>
                   <SelectItem value="paid">پرداخت شده</SelectItem>
                   <SelectItem value="shipped">ارسال شده</SelectItem>
+                  <SelectItem value="delivered">تحویل داده شده</SelectItem>
                   <SelectItem value="cancelled">لغو شده</SelectItem>
                 </SelectContent>
               </Select>
@@ -202,8 +197,6 @@ export default function OrdersPageClient({ initialOrders, initialStats }: Orders
             <OrderCard
               key={order.id}
               order={order}
-              onViewDetails={handleViewDetails}
-              onTrackOrder={handleTrackOrder}
             />
           ))}
         </div>

@@ -26,7 +26,7 @@ import type { OrderWithDynamicRelations } from '@actions/orders/types'
 interface OrderDetailsProps {
   order: {
     id: string
-    status: "pending" | "paid" | "shipped" | "cancelled"
+    status: "pending" | "paid" | "shipped" | "cancelled" | "delivered"
     total: number
     discountAmount?: number | null
     createdAt: Date | null
@@ -55,7 +55,7 @@ interface OrderDetailsProps {
       createdAt: Date | null
     }>
   }
-  onUpdateStatus?: (orderId: string, status: "pending" | "paid" | "shipped" | "cancelled") => void
+  onUpdateStatus?: (orderId: string, status: "pending" | "paid" | "shipped" | "cancelled" | "delivered") => void
   isAdmin?: boolean
 }
 
@@ -80,6 +80,13 @@ const statusConfig = {
     textColor: 'text-green-700',
     bgColor: 'bg-green-50',
     icon: Truck,
+  },
+  delivered: {
+    label: 'تحویل داده شده',
+    color: 'bg-green-600',
+    textColor: 'text-green-800',
+    bgColor: 'bg-green-100',
+    icon: CheckCircle,
   },
   cancelled: {
     label: 'لغو شده',
@@ -147,8 +154,16 @@ export function OrderDetails({ order, onUpdateStatus, isAdmin = false }: OrderDe
               <Button 
                 size="sm" 
                 variant="outline"
+                onClick={() => onUpdateStatus?.(order.id, 'delivered')}
+                disabled={order.status !== 'shipped'}
+              >
+                علامت‌گذاری تحویل شده
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
                 onClick={() => onUpdateStatus?.(order.id, 'cancelled')}
-                disabled={order.status === 'cancelled'}
+                disabled={order.status === 'cancelled' || order.status === 'delivered'}
               >
                 لغو سفارش
               </Button>

@@ -31,7 +31,8 @@ export async function updateOrderStatus(input: UpdateOrderStatusInput): Promise<
     const validTransitions: Record<string, string[]> = {
       pending: ['paid', 'cancelled'],
       paid: ['shipped', 'cancelled'],
-      shipped: ['cancelled'], // Usually shipped orders can't be cancelled, but might depend on business logic
+      shipped: ['delivered', 'cancelled'], 
+      delivered: [], // Delivered orders are final
       cancelled: [], // Cancelled orders can't be changed
     }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@shadcn/button'
 import { Badge } from '@shadcn/badge'
@@ -31,9 +32,10 @@ const trackingSteps = [
 export default function OrderDetailsClient({ order: initialOrder, isAdmin = false }: OrderDetailsClientProps) {
   const [order, setOrder] = useState(initialOrder)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const router = useRouter()
 
-  const handleUpdateStatus = async (orderId: string, newStatus: "pending" | "paid" | "shipped" | "cancelled") => {
+  const handleUpdateStatus = async (orderId: string, newStatus: "pending" | "paid" | "shipped" | "cancelled" | "delivered") => {
     if (!isAdmin) {
       toast.error('شما مجاز به انجام این عملیات نیستید')
       return
@@ -51,6 +53,24 @@ export default function OrderDetailsClient({ order: initialOrder, isAdmin = fals
     } catch (error) {
       console.error('Error updating order status:', error)
       toast.error(error instanceof Error ? error.message : 'خطا در به‌روزرسانی وضعیت سفارش')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleConfirmDelivery = async () => {
+    setIsUpdating(true)
+    try {
+      await updateOrderStatus({
+        orderId: order.id,
+        status: 'delivered' as any, // We'll need to add this status to the type
+      })
+
+      setOrder(prev => ({ ...prev, status: 'delivered' as any }))
+      toast.success('تحویل سفارش تایید شد')
+    } catch (error) {
+      console.error('Error confirming delivery:', error)
+      toast.error('خطا در تایید تحویل')
     } finally {
       setIsUpdating(false)
     }
@@ -80,11 +100,13 @@ export default function OrderDetailsClient({ order: initialOrder, isAdmin = fals
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => router.back()}
+          asChild
           className="flex items-center gap-2"
         >
-          <ArrowLeft className="h-4 w-4" />
-          بازگشت
+          <Link href="/panel/orders">
+            <ArrowLeft className="h-4 w-4" />
+            بازگشت
+          </Link>
         </Button>
         <div>
           <h1 className="text-2xl font-bold">جزئیات سفارش</h1>
@@ -175,21 +197,58 @@ export default function OrderDetailsClient({ order: initialOrder, isAdmin = fals
       <div className="flex gap-3">
         <Button 
           variant="outline"
-          onClick={() => router.push('/panel/orders')}
+          asChild
         >
-          بازگشت به لیست سفارش‌ها
+          <Link href="/panel/orders">
+            بازگشت به لیست سفارش‌ها
+          </Link>
         </Button>
         
         {order.status === 'pending' && (
-          <Button>
-            پرداخت مجدد
+          <Button
+            asChild
+            disabled={isNavigating}
+            className="gap-2"
+          >
+            <Link 
+              href={`/panel/orders/${order.id}/payment`}
+              onClick={() => setIsNavigating(true)}
+            >
+              {isNavigating ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                  در حال انتقال...
+                </>
+              ) : (
+                'پرداخت'
+              )}
+            </Link>
           </Button>
         )}
         
         {order.status === 'shipped' && (
-          <Button variant="outline">
-            تایید دریافت
+          <Button 
+            variant="outline"
+            onClick={handleConfirmDelivery}
+            disabled={isUpdating}
+            className="gap-2"
+          >
+            {isUpdating ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                در حال تایید...
+              </>
+            ) : (
+              'تایید دریافت'
+            )}
           </Button>
+        )}
+
+        {order.status === 'delivered' && (
+          <div className="flex items-center gap-2 text-green-600">
+            <CheckCircle className="h-4 w-4" />
+            <span className="text-sm font-medium">سفارش تحویل داده شده</span>
+          </div>
         )}
       </div>
     </div>

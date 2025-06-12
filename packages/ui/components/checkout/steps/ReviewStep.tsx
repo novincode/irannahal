@@ -130,25 +130,64 @@ export function ReviewStep() {
             {/* Address */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <MdLocationOn className="w-4 h-4" />
-                  آدرس ارسال
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <MdLocationOn className="w-4 h-4" />
+                    آدرس ارسال
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStep('address')}
+                    className="h-8 px-2 text-xs"
+                  >
+                    <MdEdit className="w-3 h-3 ml-1" />
+                    تغییر
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  آدرس انتخاب شده: {state.selectedAddressId}
-                </p>
+                {selectedAddress ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{selectedAddress.title}</span>
+                      <Badge variant="outline">انتخاب شده</Badge>
+                    </div>
+                    <p className="text-sm">{selectedAddress.address}</p>
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span>شهر: {selectedAddress.city}</span>
+                      <span>کد پستی: {selectedAddress.postalCode}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      گیرنده: {selectedAddress.fullName} | {selectedAddress.phone}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    آدرس انتخاب شده: {state.selectedAddressId}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
             {/* Shipping */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <MdLocalShipping className="w-4 h-4" />
-                  روش ارسال
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <MdLocalShipping className="w-4 h-4" />
+                    روش ارسال
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStep('shipping')}
+                    className="h-8 px-2 text-xs"
+                  >
+                    <MdEdit className="w-3 h-3 ml-1" />
+                    تغییر
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">

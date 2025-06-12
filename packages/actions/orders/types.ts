@@ -28,13 +28,13 @@ export interface CreateOrderInput {
 // Update order status input
 export interface UpdateOrderStatusInput {
   orderId: string
-  status: "pending" | "paid" | "shipped" | "cancelled"
+  status: "pending" | "paid" | "shipped" | "cancelled" | "delivered"
 }
 
 // Order filters for getting orders
 export interface OrderFilters {
   userId?: string
-  status?: "pending" | "paid" | "shipped" | "cancelled"
+  status?: "pending" | "paid" | "shipped" | "cancelled" | "delivered"
   limit?: number
   offset?: number
   dateFrom?: Date
@@ -48,6 +48,7 @@ export interface OrderStats {
   paidOrders: number
   shippedOrders: number
   cancelledOrders: number
+  deliveredOrders: number
   totalSpent: number
   averageOrderValue: number
 }
