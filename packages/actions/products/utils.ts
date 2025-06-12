@@ -104,3 +104,10 @@ export function generateSKU(productName: string, category?: string): string {
   
   return `${namePrefix}-${categoryPrefix}-${timestamp}`
 }
+
+/**
+ * Generate product page URL
+ */
+export function getProductPageUrl(slug: string): string {
+  return `/products/${slug}`
+}

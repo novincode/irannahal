@@ -31,8 +31,8 @@ export const authOptions: NextAuthConfig = {
       if (session.user && token?.id) {
         const dbUser = await getUser(token.id as string);
         if (dbUser) {
-          session.user.id = dbUser.id;
-          session.user.role = dbUser.role as any;
+          (session.user as any).id = dbUser.id;
+          (session.user as any).role = dbUser.role;
           session.user.name = dbUser.name ?? undefined;
           session.user.email = dbUser.email || "";
           session.user.image = dbUser.image ?? undefined;

@@ -383,12 +383,10 @@ export function MetaField({
 
   return (
     <div className={className}>
-      {type !== "checkbox" && type !== "switch" && (
-        <Label htmlFor={name} className="text-sm font-medium">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </Label>
-      )}
+      <Label htmlFor={name} className="text-sm font-medium">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
       <div className="mt-1">
         {renderField()}
       </div>

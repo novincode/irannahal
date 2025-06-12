@@ -47,12 +47,8 @@ export function PostEditorToolbar({
   }
   
   return (
-    <div className="flex items-center justify-between border-b pb-4">
+    <div className="flex items-center justify-between border-t pt-4 mt-6">
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold">
-          ویرایش {getPostTypeLabel(postType)}
-        </h1>
-        
         {store.isDirty && (
           <Badge variant="secondary" className="text-xs">
             تغییر یافته

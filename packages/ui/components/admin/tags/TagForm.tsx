@@ -14,6 +14,7 @@ import {
   FormControl,
   FormMessage,
 } from "@ui/components/ui/form"
+import { slugify } from "@ui/lib/slug"
 
 interface TagFormProps {
   initialData?: Partial<TagFormInput> & { id?: string }
@@ -42,11 +43,24 @@ export const TagForm = React.forwardRef<TagFormHandle, TagFormProps>(
         slug: "",
         ...initialData,
       },
+      mode: "onChange",
     })
 
     React.useImperativeHandle(ref, () => ({
-      reset: () => form.reset(),
-    }))
+      reset: () => form.reset({ name: "", slug: "" }),
+    }), [form])
+
+    // Auto-generate slug from name
+    React.useEffect(() => {
+      const subscription = form.watch((value, { name }) => {
+        if (name === 'name' && value.name && !isEditing) {
+          const slug = slugify(value.name)
+          form.setValue('slug', slug)
+        }
+      })
+      
+      return () => subscription.unsubscribe()
+    }, [form, isEditing])
 
     const handleSubmit = form.handleSubmit(async (data) => {
       await onSubmit?.(data)
@@ -82,7 +96,7 @@ export const TagForm = React.forwardRef<TagFormHandle, TagFormProps>(
             )}
           />
           <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
-            {submitLabel}
+            {form.formState.isSubmitting ? "در حال ثبت..." : submitLabel}
           </Button>
         </form>
       </Form>

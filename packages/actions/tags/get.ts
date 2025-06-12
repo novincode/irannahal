@@ -12,7 +12,7 @@ export async function getTag<TWith extends TagRelations>(
     where: eq(tags.id, id),
     with: opts?.with,
   })
-  return tag as unknown as TagWithDynamicRelations<TWith> | null
+return tag as unknown as TagWithDynamicRelations<TWith> | null
 }
 
 export async function getTags<TWith extends TagRelations>(

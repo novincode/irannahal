@@ -4,11 +4,11 @@ import * as React from "react"
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@ui/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui/components/ui/select"
 import { Button } from "@ui/components/ui/button"
+import { usePostEditorStore } from "@data/usePostEditorStore"
 import type { BlockProps } from "@data/usePostEditorStore"
 
 interface StatusBlockProps extends BlockProps {
   submitLabel?: string
-  isLoading?: boolean
 }
 
 export function StatusBlock({ 
@@ -16,9 +16,10 @@ export function StatusBlock({
   postType, 
   blockId, 
   onUpdate, 
-  submitLabel = "ذخیره", 
-  isLoading = false 
+  submitLabel = "ذخیره"
 }: StatusBlockProps) {
+  const store = usePostEditorStore()
+  
   const getStatusOptions = () => {
     if (postType === 'product') {
       return [
@@ -74,11 +75,11 @@ export function StatusBlock({
       
       <Button 
         type="submit" 
-        disabled={isLoading} 
+        disabled={store.isSaving} 
         className="w-full"
         size="default"
       >
-        {isLoading ? "در حال ذخیره..." : submitLabel}
+        {store.isSaving ? "در حال ذخیره..." : submitLabel}
       </Button>
     </div>
   )

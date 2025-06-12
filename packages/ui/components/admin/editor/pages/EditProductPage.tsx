@@ -45,19 +45,36 @@ export function EditProductPage({
     categoriesData,
     tagsData,
     onCreateTag: async (name: string) => {
-      // Implement tag creation logic here
-      console.log("Creating tag:", name)
-      return {
-        id: `tag-${Date.now()}`,
-        name: name,
-        slug: name.toLowerCase().replace(/\s+/g, "-")
-      }
+      // Use the real createTag action to create a proper tag with UUID
+      const { createTag } = await import("@actions/tags/create")
+      const newTag = await createTag({ 
+        name: name.trim(), 
+        slug: name.trim().toLowerCase().replace(/\s+/g, "-") 
+      })
+      console.log("Created tag:", newTag)
+      return newTag
     }
   }), [categoriesData, tagsData])
 
   // Transform product data to match form schema
   const initialData = React.useMemo(() => {
-    return {
+    console.log('=== DEBUGGING EDIT PRODUCT PAGE ===')
+    console.log('Raw product data:', product)
+    console.log('Product categories:', product.categories)
+    console.log('Product tags:', product.tags)
+    
+    // Extract category and tag IDs carefully
+    const categoryIds = Array.isArray(product.categories) 
+      ? product.categories.map((c) => c.id).filter(Boolean) 
+      : []
+    const tagIds = Array.isArray(product.tags) 
+      ? product.tags.map((t) => t.id).filter(Boolean) 
+      : []
+    
+    console.log('Extracted categoryIds:', categoryIds)
+    console.log('Extracted tagIds:', tagIds)
+    
+    const data = {
       // Basic fields
       name: product.name || "",
       slug: product.slug || "",
@@ -67,38 +84,50 @@ export function EditProductPage({
       // Status fields
       status: product.status || "draft",
       
-      // Relations - safely handle with proper types
-      categoryIds: product.categories?.map((c) => c.id) || [],
-      tagIds: product.tags?.map((t) => t.id) || [],
+      // Relations - ensure arrays are never undefined and filter out invalid IDs
+      categoryIds,
+      tagIds,
       
       // Media
       thumbnailId: product.thumbnailId || undefined,
-      mediaIds: product.media?.map((m) => m.id) || [],
+      mediaIds: Array.isArray(product.media) ? product.media.map((m) => m.id) : [],
       
       // Meta and complex fields
       meta: product.meta ? metaRowsToObject(product.meta) : {},
       infoTable: [], // This would come from meta if stored there
-      downloads: product.downloads?.map(d => ({
+      downloads: Array.isArray(product.downloads) ? product.downloads.map(d => ({
         id: d.id,
         name: d.url.split('/').pop() || 'Download', // Extract filename from URL
         url: d.url,
+        type: d.type || 'file' as const,
+        maxDownloads: 0,
         description: undefined,
         size: undefined,
         format: d.type
-      })) || [],
+      })) : [],
       
-      // Timestamps - only include ones that exist on ProductSchema
-      createdAt: product.createdAt ? new Date(product.createdAt) : new Date(),
-      updatedAt: product.updatedAt ? new Date(product.updatedAt) : new Date(),
+      // Content
+      content: product.content || "",
     }
+    
+    console.log('EditProductPage initialData:', data)
+    return data
   }, [product])
 
   const handleSave = async (formData: any) => {
     try {
-      await updateProductAction({ ...formData, id: product.id })
+      console.log('Saving product with data:', formData)
+      const result = await updateProductAction({ ...formData, id: product.id })
+      console.log('Product updated successfully:', result)
+      
+      // Refresh the page to get updated data
       router.refresh()
+      
+      // Show success message
+      toast.success("محصول با موفقیت به‌روزرسانی شد")
     } catch (error) {
       console.error("Failed to update product:", error)
+      toast.error("خطا در به‌روزرسانی محصول")
       throw error
     }
   }

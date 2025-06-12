@@ -34,13 +34,14 @@ export function NewProductPage({
     categoriesData,
     tagsData,
     onCreateTag: async (name: string) => {
-      // Implement tag creation logic here
-      console.log("Creating tag:", name)
-      return {
-        id: `tag-${Date.now()}`,
-        name: name,
-        slug: name.toLowerCase().replace(/\s+/g, "-")
-      }
+      // Use the real createTag action to create a proper tag with UUID
+      const { createTag } = await import("@actions/tags/create")
+      const newTag = await createTag({ 
+        name: name.trim(), 
+        slug: name.trim().toLowerCase().replace(/\s+/g, "-") 
+      })
+      console.log("Created tag:", newTag)
+      return newTag
     }
   }), [categoriesData, tagsData])
 

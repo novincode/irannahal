@@ -1,54 +1,57 @@
 "use client"
 
 import * as React from "react"
-import { usePostEditorStore } from "@data/usePostEditorStore"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@ui/components/ui/form"
 import { Button } from "@ui/components/ui/button"
 import { Input } from "@ui/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@ui/components/ui/card"
-import { GripVertical, Trash2, Plus } from "lucide-react"
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
+import { Card, CardContent } from "@ui/components/ui/card"
+import { Trash2, Plus, GripVertical } from "lucide-react"
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
   useSensors,
-  DragEndEvent,
+  DragEndEvent
 } from "@dnd-kit/core"
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import {
-  useSortable,
+  useSortable
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+
+
+import type { BlockProps } from "@data/usePostEditorStore"
 
 // ==========================================
 // TYPES
 // ==========================================
 
-interface InfoTableItem {
+export interface InfoTableItem {
   id: string
   key: string
   value: string
 }
 
-interface InfoTableBlockProps {
-  blockId: string
+interface InfoTableBlockProps extends BlockProps {
+  disabled?: boolean
 }
 
 // ==========================================
 // SORTABLE ITEM
 // ==========================================
 
-function SortableInfoItem({ item, onUpdate, onRemove }: {
+interface SortableInfoItemProps {
   item: InfoTableItem
   onUpdate: (item: InfoTableItem) => void
-  onRemove: () => void
-}) {
+  onRemove: (id: string) => void
+}
+
+function SortableInfoItem({ item, onUpdate, onRemove }: SortableInfoItemProps) {
   const {
     attributes,
     listeners,
@@ -65,41 +68,46 @@ function SortableInfoItem({ item, onUpdate, onRemove }: {
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-2">
-      <Card>
-        <CardContent className="p-3">
-          <div className="flex gap-2 items-center">
-            <div
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing"
-            >
-              <GripVertical className="h-4 w-4 text-gray-400" />
-            </div>
-            <Input
-              placeholder="عنوان"
-              value={item.key}
-              onChange={(e) => onUpdate({ ...item, key: e.target.value })}
-              className="flex-1"
-            />
-            <Input
-              placeholder="مقدار"
-              value={item.value}
-              onChange={(e) => onUpdate({ ...item, value: e.target.value })}
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onRemove}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card ref={setNodeRef} style={style} className="mb-2">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="cursor-grab active:cursor-grabbing p-1"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </Button>
+          
+          <Input
+            placeholder="کلید"
+            value={item.key}
+            onChange={(e) => onUpdate({ ...item, key: e.target.value })}
+            className="flex-1"
+          />
+          
+          <Input
+            placeholder="مقدار"
+            value={item.value}
+            onChange={(e) => onUpdate({ ...item, value: e.target.value })}
+            className="flex-1"
+          />
+          
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(item.id)}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -107,11 +115,13 @@ function SortableInfoItem({ item, onUpdate, onRemove }: {
 // MAIN COMPONENT
 // ==========================================
 
-export function InfoTableBlock({ blockId }: InfoTableBlockProps) {
-  const { updateField, postData } = usePostEditorStore()
-  
-  const infoTable = (postData.infoTable || []) as InfoTableItem[]
-
+export function InfoTableBlock({ 
+  control, 
+  postType, 
+  blockId, 
+  onUpdate,
+  disabled = false
+}: InfoTableBlockProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -119,90 +129,89 @@ export function InfoTableBlock({ blockId }: InfoTableBlockProps) {
     })
   )
 
-  const updateInfoTable = (newInfoTable: InfoTableItem[]) => {
-    updateField("infoTable", newInfoTable)
-  }
-
-  const addItem = () => {
-    const newItem: InfoTableItem = {
-      id: `info-${Date.now()}`,
-      key: "",
-      value: ""
-    }
-    updateInfoTable([...infoTable, newItem])
-  }
-
-  const updateItem = (index: number, updatedItem: InfoTableItem) => {
-    const newInfoTable = [...infoTable]
-    newInfoTable[index] = updatedItem
-    updateInfoTable(newInfoTable)
-  }
-
-  const removeItem = (index: number) => {
-    const newInfoTable = infoTable.filter((_, i) => i !== index)
-    updateInfoTable(newInfoTable)
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (over && active.id !== over.id) {
-      const oldIndex = infoTable.findIndex((item) => item.id === active.id)
-      const newIndex = infoTable.findIndex((item) => item.id === over.id)
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        updateInfoTable(arrayMove(infoTable, oldIndex, newIndex))
-      }
-    }
-  }
+  const generateId = () => `info_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">جدول مشخصات</h3>
-        <Button type="button" variant="outline" size="sm" onClick={addItem}>
-          <Plus className="h-4 w-4 mr-2" />
-          افزودن مشخصه
-        </Button>
-      </div>
+    <FormField
+      control={control}
+      name="infoTable"
+      render={({ field }) => {
+        const items: InfoTableItem[] = field.value || []
 
-      {infoTable.length > 0 && (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={infoTable.map((item) => item.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {infoTable.map((item, index) => (
-              <SortableInfoItem
-                key={item.id}
-                item={item}
-                onUpdate={(updatedItem) => updateItem(index, updatedItem)}
-                onRemove={() => removeItem(index)}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-      )}
+        const handleDragEnd = (event: DragEndEvent) => {
+          const { active, over } = event
+          if (over && active.id !== over.id) {
+            const oldIndex = items.findIndex(item => item.id === active.id)
+            const newIndex = items.findIndex(item => item.id === over.id)
+            const newItems = arrayMove(items, oldIndex, newIndex)
+            field.onChange(newItems)
+            onUpdate?.('infoTable', newItems)
+          }
+        }
 
-      {infoTable.length === 0 && (
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-gray-500">هیچ مشخصه‌ای اضافه نشده است</p>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addItem}
-              className="mt-2"
-            >
-              افزودن اولین مشخصه
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        const handleAddItem = () => {
+          const newItem: InfoTableItem = {
+            id: generateId(),
+            key: "",
+            value: ""
+          }
+          const newItems = [...items, newItem]
+          field.onChange(newItems)
+          onUpdate?.('infoTable', newItems)
+        }
+
+        const handleUpdateItem = (updatedItem: InfoTableItem) => {
+          const newItems = items.map(item => 
+            item.id === updatedItem.id ? updatedItem : item
+          )
+          field.onChange(newItems)
+          onUpdate?.('infoTable', newItems)
+        }
+
+        const handleRemoveItem = (id: string) => {
+          const newItems = items.filter(item => item.id !== id)
+          field.onChange(newItems)
+          onUpdate?.('infoTable', newItems)
+        }
+
+        return (
+          <FormItem>
+            <FormLabel>ویژگی‌های محصول</FormLabel>
+            <FormControl>
+              <div className="space-y-4">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={items} strategy={verticalListSortingStrategy}>
+                    {items.map((item) => (
+                      <SortableInfoItem
+                        key={item.id}
+                        item={item}
+                        onUpdate={handleUpdateItem}
+                        onRemove={handleRemoveItem}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddItem}
+                  disabled={disabled}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 ml-2" />
+                  افزودن ویژگی
+                </Button>
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
   )
 }

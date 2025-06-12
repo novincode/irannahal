@@ -92,11 +92,14 @@ export default function ProductsDataTable({ data }: ProductsDataTableProps) {
         if (aValue == null) return sortConfig.direction === 'asc' ? -1 : 1
         if (bValue == null) return sortConfig.direction === 'asc' ? 1 : -1
         
-        if (aValue < bValue) {
-          return sortConfig.direction === 'asc' ? -1 : 1
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'asc' ? 1 : -1
+        // Type-safe comparison
+        if (aValue != null && bValue != null) {
+          if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1
+          }
         }
         return 0
       })

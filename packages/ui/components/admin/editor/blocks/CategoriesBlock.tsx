@@ -6,18 +6,20 @@ import { Checkbox } from "@ui/components/ui/checkbox"
 import { Label } from "@ui/components/ui/label"
 import { ScrollArea } from "@ui/components/ui/scroll-area"
 import { Button } from "@ui/components/ui/button"
+import { Input } from "@ui/components/ui/input"
 import { Plus } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@ui/components/ui/dialog"
 import type { BlockProps } from "@data/usePostEditorStore"
 import type { CategoryWithDynamicRelations } from "@actions/categories/types"
-import { CategoryForm } from "@ui/components/admin/categories/CategoryForm"
 import { createCategory } from "@actions/categories/create"
+import { getCategories } from "@actions/categories/get"
 import { toast } from "sonner"
 
 interface CategoriesBlockProps extends BlockProps {
   categories?: CategoryWithDynamicRelations[]
   disabled?: boolean
   onCreateCategory?: (name: string) => Promise<CategoryWithDynamicRelations>
+  onCategoriesUpdated?: (categories: CategoryWithDynamicRelations[]) => void
 }
 
 export function CategoriesBlock({ 
@@ -25,20 +27,49 @@ export function CategoriesBlock({
   postType, 
   blockId, 
   onUpdate,
-  categories = [],
+  categories: initialCategories = [],
   disabled = false,
-  onCreateCategory
+  onCreateCategory,
+  onCategoriesUpdated
 }: CategoriesBlockProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
   const [isCreating, setIsCreating] = React.useState(false)
+  const [categories, setCategories] = React.useState<CategoryWithDynamicRelations[]>(initialCategories)
+  const [newCategoryName, setNewCategoryName] = React.useState("")
 
-  const handleCreateCategory = async (formData: any) => {
+  // Load categories on mount if not provided
+  React.useEffect(() => {
+    if (initialCategories.length === 0) {
+      getCategories().then(setCategories).catch(console.error)
+    } else {
+      setCategories(initialCategories)
+    }
+  }, [])
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return
+
     setIsCreating(true)
     try {
-      await createCategory(formData)
+      let newCategory: CategoryWithDynamicRelations
+
+      if (onCreateCategory) {
+        newCategory = await onCreateCategory(newCategoryName.trim())
+      } else {
+        newCategory = await createCategory({ 
+          name: newCategoryName.trim(), 
+          slug: newCategoryName.trim().toLowerCase().replace(/\s+/g, "-")
+        })
+      }
+
       toast.success("دسته‌بندی با موفقیت ایجاد شد")
+      
+      const updatedCategories = [...categories, newCategory]
+      setCategories(updatedCategories)
+      onCategoriesUpdated?.(updatedCategories)
+      
+      setNewCategoryName("")
       setIsDialogOpen(false)
-      // Note: Parent should refresh categories list
     } catch (error) {
       console.error("Failed to create category:", error)
       toast.error("خطا در ایجاد دسته‌بندی")
@@ -48,84 +79,105 @@ export function CategoriesBlock({
   }
 
   return (
-    <div className="space-y-4">
-      <FormField
-        control={control}
-        name="categoryIds"
-        render={({ field }) => {
-          const selectedIds = field.value || []
+    <FormField
+      control={control}
+      name="categoryIds"
+      render={({ field }) => {
+        const selectedIds = Array.isArray(field.value) ? field.value : []
+        
+        console.log('=== CATEGORIES BLOCK DEBUG ===')
+        console.log('field.value:', field.value)
+        console.log('selectedIds:', selectedIds)
+        console.log('available categories:', categories.map(c => ({ id: c.id, name: c.name })))
+        
+        const handleToggle = (categoryId: string, checked: boolean) => {
+          const newValue = checked 
+            ? [...selectedIds, categoryId]
+            : selectedIds.filter((id: string) => id !== categoryId)
           
-          const handleToggle = (categoryId: string, checked: boolean) => {
-            const newValue = checked 
-              ? [...selectedIds, categoryId]
-              : selectedIds.filter((id: string) => id !== categoryId)
-            
-            field.onChange(newValue)
-            onUpdate?.('categoryIds', newValue)
-          }
+          console.log('Category toggle:', categoryId, checked, 'new value:', newValue)
+          field.onChange(newValue)
+        }
 
-          return (
-            <FormItem>
-              <div className="flex items-center justify-between">
-                <FormLabel>دسته‌بندی‌ها</FormLabel>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" type="button">
-                      <Plus className="w-4 h-4 ml-2" />
-                      جدید
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>دسته‌بندی جدید</DialogTitle>
-                    </DialogHeader>
-                    <CategoryForm
-                      onSubmit={handleCreateCategory}
-                      submitLabel={isCreating ? "در حال ایجاد..." : "ایجاد دسته‌بندی"}
-                      parentOptions={categories.map(cat => ({
-                        value: cat.id,
-                        label: cat.name
-                      }))}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
-              
-              <FormControl>
-                <ScrollArea className="h-40 w-full rounded-md border p-4">
-                  {categories.length === 0 ? (
-                    <div className="text-center py-4 text-sm text-muted-foreground">
-                      هیچ دسته‌بندی یافت نشد
+        return (
+          <FormItem>
+            <div className="flex items-center justify-between">
+              <FormLabel>دسته‌بندی‌ها</FormLabel>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" type="button">
+                    <Plus className="w-4 h-4 ml-2" />
+                    جدید
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>دسته‌بندی جدید</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="category-name">نام دسته‌بندی</Label>
+                      <Input
+                        id="category-name"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="نام دسته‌بندی را وارد کنید"
+                      />
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {categories.map((category) => (
-                        <div key={category.id} className="flex items-center space-x-2 space-x-reverse">
-                          <Checkbox
-                            id={`category-${category.id}`}
-                            checked={selectedIds.includes(category.id)}
-                            onCheckedChange={(checked) => 
-                              handleToggle(category.id, !!checked)
-                            }
-                            disabled={disabled}
-                          />
-                          <Label 
-                            htmlFor={`category-${category.id}`}
-                            className="text-sm font-normal cursor-pointer flex-1"
-                          >
-                            {category.name}
-                          </Label>
-                        </div>
-                      ))}
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        type="button"
+                        onClick={() => setIsDialogOpen(false)}
+                      >
+                        لغو
+                      </Button>
+                      <Button 
+                        type="button"
+                        onClick={handleCreateCategory}
+                        disabled={isCreating || !newCategoryName.trim()}
+                      >
+                        {isCreating ? "در حال ایجاد..." : "ایجاد"}
+                      </Button>
                     </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <FormControl>
+              <ScrollArea className="h-48 border rounded-md p-3">
+                <div className="space-y-2">
+                  {categories.map((category) => (
+                    <div key={category.id} className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id={`category-${category.id}`}
+                        checked={selectedIds.includes(category.id)}
+                        onCheckedChange={(checked) => 
+                          handleToggle(category.id, checked === true)
+                        }
+                        disabled={disabled}
+                      />
+                      <Label
+                        htmlFor={`category-${category.id}`}
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        {category.name}
+                      </Label>
+                    </div>
+                  ))}
+                  {categories.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      هیچ دسته‌بندی موجود نیست
+                    </p>
                   )}
-                </ScrollArea>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-    </div>
+                </div>
+              </ScrollArea>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
   )
 }

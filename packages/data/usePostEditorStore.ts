@@ -219,7 +219,13 @@ const storeImpl = (set: any, get: any) => ({
   setLoading: (loading: boolean) => set({ isLoading: loading }),
   setSaving: (saving: boolean) => set({ isSaving: saving }),
   markDirty: () => set({ isDirty: true }),
-  markClean: () => set({ isDirty: false }),
+  markClean: () => {
+    const { postData } = get()
+    set({ 
+      isDirty: false,
+      originalData: { ...postData } // Update original data to match current data
+    })
+  },
   setLayout: (layout: { left: Array<{ id: string; blockType: string }>; right: Array<{ id: string; blockType: string }> }) => set({ layout }),
   setBlockProps: (props: Record<string, any>) => set({ blockProps: { ...get().blockProps, ...props } })
 })

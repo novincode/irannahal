@@ -30,6 +30,11 @@ export function PostEditorColumn({
   const form = useFormContext()
   const store = usePostEditorStore()
   
+  // Memoize the update handler to prevent re-renders
+  const handleUpdate = React.useCallback((path: string, value: any) => {
+    store.updateField(path, value)
+  }, [store])
+  
   return (
     <SortableContext
       items={blocks.map(b => b.id)}
@@ -52,13 +57,13 @@ export function PostEditorColumn({
               title={blockDefinition.title}
               postType={store.postType}
               control={form.control}
-              onUpdate={store.updateField}
+              onUpdate={handleUpdate}
             >
               <blockDefinition.component 
                 control={form.control}
                 postType={store.postType}
                 blockId={block.id}
-                onUpdate={store.updateField}
+                onUpdate={handleUpdate}
                 {...store.blockProps}
               />
             </SortableBlock>

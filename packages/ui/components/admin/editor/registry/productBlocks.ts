@@ -6,6 +6,7 @@ import {
   TagsBlock,
   MetaBlock,
   MediaBlock,
+  ThumbnailBlock,
   InfoTableBlock,
   DownloadsBlock,
   ContentBlock
@@ -58,7 +59,7 @@ export function registerProductBlocks() {
     id: 'thumbnail',
     title: 'تصویر شاخص',
     category: 'media',
-    component: MediaBlock,
+    component: ThumbnailBlock,
     supports: {
       postTypes: ['product', 'post', 'page'],
       placement: 'left'

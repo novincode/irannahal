@@ -108,7 +108,6 @@ export function MetaBlock({ control, postType, blockId, onUpdate, schema }: Meta
                     name={`meta.${fieldKey}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{fieldConfig?.label || fieldKey}</FormLabel>
                         <FormControl>
                           <MetaField
                             name={fieldKey}

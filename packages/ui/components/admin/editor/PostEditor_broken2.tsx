@@ -30,67 +30,22 @@ export interface PostEditorProps {
 // HOOKS
 // ==========================================
 
-function useFormSync(form: any, store: any, initialData: any) {
-  const initializedRef = React.useRef(false)
-  const savingRef = React.useRef(false)
-  const lastSyncedDataRef = React.useRef<any>(null)
-  
-  // Track saving state to prevent form resets during save
-  React.useEffect(() => {
-    savingRef.current = store.isSaving
-  }, [store.isSaving])
-  
+function useFormSync(form: any, store: any) {
   // Initialize form with store data once
   React.useEffect(() => {
-    if (store.postData && Object.keys(store.postData).length > 0 && !initializedRef.current) {
-      console.log('Form sync: Initial form setup with store data')
-      console.log('Store data categoryIds:', store.postData.categoryIds)
-      console.log('Store data tagIds:', store.postData.tagIds)
+    if (store.postData && Object.keys(store.postData).length > 0) {
       form.reset(store.postData, { keepDefaultValues: true })
-      lastSyncedDataRef.current = store.postData
-      initializedRef.current = true
     }
-  }, [store.postData, form])
-  
-  // Handle when new initialData is passed (e.g., after router.refresh)
-  React.useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      // Only reset if this is different from what we last synced
-      const hasNewData = JSON.stringify(initialData) !== JSON.stringify(lastSyncedDataRef.current)
-      
-      if (hasNewData && !savingRef.current && !store.isSaving) {
-        console.log('Form sync: New initial data detected, updating form')
-        console.log('New initial data categoryIds:', initialData.categoryIds)
-        console.log('New initial data tagIds:', initialData.tagIds)
-        form.reset(initialData, { keepDefaultValues: true })
-        lastSyncedDataRef.current = initialData
-        
-        // Also update the store to match
-        store.initialize(store.postType, initialData)
-      }
-    }
-  }, [initialData, form, store])
+  }, [store.postData]) // React to store data changes
   
   // Handle external store updates (like when data is loaded)
   React.useEffect(() => {
     const unsubscribe = store.subscribe?.(
-      (state: any) => ({ data: state.postData, isDirty: state.isDirty, isSaving: state.isSaving }),
+      (state: any) => ({ data: state.postData, isDirty: state.isDirty }),
       (value: any) => {
-        // NEVER reset form during saving or if currently saving
-        if (savingRef.current || value.isSaving) {
-          return
-        }
-        
-        // Only update form if it's not currently being edited and we have clean data
+        // Only update form if it's not currently being edited
         if (!value.isDirty && value.data && Object.keys(value.data).length > 0) {
-          // Check if this data is different from what we last synced
-          const hasChanges = JSON.stringify(value.data) !== JSON.stringify(lastSyncedDataRef.current)
-          
-          if (hasChanges) {
-            console.log('Form sync: Store data changed, updating form')
-            form.reset(value.data, { keepDefaultValues: true })
-            lastSyncedDataRef.current = value.data
-          }
+          form.reset(value.data, { keepDefaultValues: true })
         }
       }
     )
@@ -115,17 +70,10 @@ export function PostEditor({
   const store = usePostEditorStore()
   const sensors = useSensors(useSensor(PointerSensor))
   
-  // Initialize store on mount - use ref to prevent infinite loops
-  const initialDataRef = React.useRef(initialData)
-  const initializedRef = React.useRef(false)
-  
+  // Initialize store on mount
   React.useEffect(() => {
-    if (!initializedRef.current) {
-      store.initialize(postType, initialData)
-      initializedRef.current = true
-      initialDataRef.current = initialData
-    }
-  }, [postType, store]) // Only depend on postType and store, not initialData
+    store.initialize(postType, initialData)
+  }, [postType, initialData])
   
   // Setup form with default schema if none provided
   const form = useForm({
@@ -135,7 +83,7 @@ export function PostEditor({
   })
   
   // Sync form and store
-  useFormSync(form, store, initialData)
+  useFormSync(form, store)
   
   // Handle form submission
   const handleSubmit = form.handleSubmit(async (data) => {
@@ -204,22 +152,15 @@ export function PostEditor({
   }
   
   return (
-    <div className={cn("post-editor", className)} key={`${postType}-editor`}>
+    <div className={cn("post-editor", className)}>
       <FormProvider {...form}>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Toolbar at top */}
-          <PostEditorToolbar 
-            postType={postType}
-            form={form}
-            submitLabel={submitLabel}
-          />
-          
           <DndContext 
             sensors={sensors} 
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column */}
               <div className="lg:col-span-1 space-y-6">
                 <SortableContext 
@@ -249,6 +190,13 @@ export function PostEditor({
               </div>
             </div>
           </DndContext>
+          
+          {/* Toolbar */}
+          <PostEditorToolbar 
+            postType={postType}
+            form={form}
+            submitLabel={submitLabel}
+          />
         </form>
       </FormProvider>
     </div>
