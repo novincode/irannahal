@@ -24,9 +24,14 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
   useEffect(() => {
     // Fetch settings when the provider mounts if they haven't been fetched yet
     if (!initialized && !isLoading) {
-      fetchSettings().catch((err) => {
-        console.error('Failed to initialize settings:', err)
+      console.log('🔧 SettingsProvider: Initializing settings store...')
+      fetchSettings().then(() => {
+        console.log('✅ SettingsProvider: Settings store initialized successfully')
+      }).catch((err) => {
+        console.error('❌ SettingsProvider: Failed to initialize settings:', err)
       })
+    } else if (initialized) {
+      console.log('✅ SettingsProvider: Settings already initialized')
     }
   }, [fetchSettings, initialized, isLoading])
 
@@ -38,6 +43,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({
 
   // Show loading fallback while initializing
   if (!initialized && isLoading && fallback) {
+    console.log('⏳ SettingsProvider: Showing loading fallback...')
     return <>{fallback}</>
   }
 

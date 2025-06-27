@@ -10,7 +10,8 @@ import {
   Mail, 
   CreditCard, 
   Truck, 
-  Settings as SettingsIcon 
+  Settings as SettingsIcon,
+  Database
 } from "lucide-react"
 
 const settingsRoutes = [
@@ -55,6 +56,12 @@ const settingsRoutes = [
     label: "عمومی",
     icon: SettingsIcon,
     description: "سایر تنظیمات عمومی سیستم",
+  },
+  {
+    href: "/settings/cache",
+    label: "کش",
+    icon: Database,
+    description: "مدیریت و پاک‌سازی کش‌های سیستم",
   },
 ]
 

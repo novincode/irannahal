@@ -61,6 +61,11 @@ export async function getSettings(data?: GetSettingsData): Promise<FlatSettings>
     result = await db.select().from(settings)
   }
 
+  console.log('🔍 Settings DB Query Result:', {
+    resultCount: result.length,
+    sampleKeys: result.slice(0, 5).map(s => s.key)
+  })
+
   // Convert to flat object with defaults
   const flatSettings: FlatSettings = {}
   
@@ -74,6 +79,12 @@ export async function getSettings(data?: GetSettingsData): Promise<FlatSettings>
     if (!(key in flatSettings) && defaultValue) {
       flatSettings[key as SettingKey] = defaultValue
     }
+  })
+
+  console.log('📊 Final Settings Object:', {
+    totalKeys: Object.keys(flatSettings).length,
+    siteTitle: flatSettings[SETTING_KEYS.SITE_TITLE],
+    sampleSettings: Object.entries(flatSettings).slice(0, 5)
   })
 
   return flatSettings
@@ -274,18 +285,35 @@ export async function getPublicSetting(key: SettingKey): Promise<string | null> 
  * Get fresh settings by keys - bypasses all caching
  * Use this after updates to ensure you get the latest data
  */
-export async function getFreshSettings(keys: string[]): Promise<FlatSettings> {
+export async function getFreshSettings(keys?: string[]): Promise<FlatSettings> {
   return withAuth(async () => {
-    const results = await db
-      .select()
-      .from(settings)
-      .where(inArray(settings.key, keys))
+    let results;
+    
+    if (keys && keys.length > 0) {
+      // Get specific keys
+      results = await db
+        .select()
+        .from(settings)
+        .where(inArray(settings.key, keys))
+    } else {
+      // Get all settings
+      results = await db
+        .select()
+        .from(settings)
+    }
 
     const settingsMap: FlatSettings = {}
     
-    // Initialize all keys with defaults
-    for (const key of keys) {
-      settingsMap[key] = DEFAULT_SETTINGS[key as SettingKey] || null
+    // If specific keys requested, initialize with defaults
+    if (keys && keys.length > 0) {
+      for (const key of keys) {
+        settingsMap[key] = DEFAULT_SETTINGS[key as SettingKey] || null
+      }
+    } else {
+      // If getting all settings, initialize all defaults
+      for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+        settingsMap[key] = value
+      }
     }
     
     // Override with database values

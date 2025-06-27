@@ -1,4 +1,5 @@
 import { commonCaches } from "../cache"
+import { revalidateSettingsPages } from "../revalidate"
 
 // Settings-specific cache keys
 export const settingsCacheKeys = {
@@ -21,6 +22,8 @@ export const settingsCacheInvalidation = {
   // Invalidate all settings caches
   invalidateAll: () => {
     commonCaches.settings.invalidate()
+    // Note: Removed automatic revalidation to prevent excessive calls
+    // Use revalidateSettingsPages() explicitly when needed
   },
 
   // Invalidate specific setting by key
@@ -28,6 +31,7 @@ export const settingsCacheInvalidation = {
     commonCaches.settings.invalidateSubTag(settingsCacheKeys.bySingleKey(key))
     // Also invalidate related grouped caches
     settingsCacheInvalidation.invalidateGroupedCaches()
+    // Note: Removed automatic revalidation to prevent excessive calls
   },
 
   // Invalidate settings by category
@@ -35,6 +39,7 @@ export const settingsCacheInvalidation = {
     commonCaches.settings.invalidateSubTag(settingsCacheKeys.byCategory(category))
     // Also invalidate related caches
     settingsCacheInvalidation.invalidateGroupedCaches()
+    // Note: Removed automatic revalidation to prevent excessive calls
   },
 
   // Invalidate category-specific caches

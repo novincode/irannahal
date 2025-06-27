@@ -9,6 +9,7 @@ import ThemeSwitch from '@ui/components/shared/ThemeSwitch'
 import { useCartStore } from '@data/useCartStore'
 import { useSettingsStore } from '@data/useSettingsStore'
 import { SETTING_KEYS } from '@actions/settings/types'
+import { useGlobalRefresh } from '@data/globalRefresh'
 
 // --- MainHeader ---
 const MainHeader = () => {
@@ -21,7 +22,8 @@ const MainHeader = () => {
     initialized, 
     getSetting, 
     getSettingWithDefault,
-    isLoading: settingsLoading 
+    isLoading: settingsLoading,
+    refresh
   } = useSettingsStore()
   
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
@@ -32,6 +34,16 @@ const MainHeader = () => {
       fetchSettings()
     }
   }, [initialized, settingsLoading, fetchSettings])
+
+  // Listen for global refresh events and refresh settings
+  useEffect(() => {
+    const cleanup = useGlobalRefresh((detail) => {
+      console.log('🔄 MainHeader: Received refresh event, refreshing settings...', detail)
+      refresh()
+    }, ['settings', 'all'])
+
+    return cleanup
+  }, [refresh])
 
   // Get site settings for header customization
   const siteTitle = getSettingWithDefault(SETTING_KEYS.SITE_TITLE)

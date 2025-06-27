@@ -7,6 +7,7 @@ export { createMenu, createMenuItem } from "./create"
 export { getMenuById, getAllMenus, getUserMenus, getMenuWithItems, getMenuBySlug, getLinkableResources } from "./get"
 export { updateMenu, updateMenuItem, updateMenuItemsOrder } from "./update"
 export { deleteMenu, deleteMenuItem } from "./delete"
+export { invalidateMenuCache, invalidateAllMenuCaches } from "./invalidate"
 
 // Add getMenus as an alias for getAllMenus to fix import errors
 export { getAllMenus as getMenus } from "./get"

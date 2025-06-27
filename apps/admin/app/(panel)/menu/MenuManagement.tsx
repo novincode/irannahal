@@ -8,6 +8,7 @@ import { Label } from '@shadcn/label'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { menuCacheOperations } from '@actions/menu'
+import { dispatchGlobalRefresh } from '@data/globalRefresh'
 import { toast } from 'sonner'
 import type { Menu } from '@actions/menu/types'
 import {
@@ -50,6 +51,8 @@ export default function MenuManagement({ initialMenus }: MenuManagementProps) {
       setNewMenuName('')
       setNewMenuSlug('')
       toast.success('منو با موفقیت ایجاد شد')
+      // Dispatch global refresh to update all menu displays
+      dispatchGlobalRefresh('menu')
     } catch (error) {
       toast.error('خطا در ایجاد منو')
     } finally {
@@ -62,6 +65,8 @@ export default function MenuManagement({ initialMenus }: MenuManagementProps) {
       await menuCacheOperations.deleteMenu(menuId)
       setMenus(prev => prev.filter(menu => menu.id !== menuId))
       toast.success('منو با موفقیت حذف شد')
+      // Dispatch global refresh to update all menu displays
+      dispatchGlobalRefresh('menu')
     } catch (error) {
       toast.error('خطا در حذف منو')
     }

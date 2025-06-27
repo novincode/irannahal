@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@ui/lib/utils'
 import { menuCacheOperations } from '@actions/menu'
+import { dispatchGlobalRefresh } from '@data/globalRefresh'
 import type { MenuWithItems, MenuItemWithChildren, MenuItemOrderUpdate } from '@actions/menu/types'
 import MenuItemForm from './MenuItemForm'
 import SortableMenuItem from './SortableMenuItem'
@@ -510,6 +511,9 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
 
       await menuCacheOperations.updateMenuItemsOrder({ items: orderUpdates })
       toast.success('ترتیب منو با موفقیت ذخیره شد')
+      
+      // Dispatch global refresh to update all menu displays
+      dispatchGlobalRefresh('menu')
       
       // Refresh the page to get updated data from server
       router.refresh()

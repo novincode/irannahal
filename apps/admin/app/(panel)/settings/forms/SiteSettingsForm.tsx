@@ -32,13 +32,14 @@ import {
   type SiteSettingsFormInput 
 } from "@actions/settings/formSchema"
 import { updateSiteSettings, getFreshSettings } from "@actions/settings"
+import { revalidateSettingsPages } from "@actions/revalidate"
 import { getDefaultSetting, SITE_SETTING_KEYS } from "@actions/settings/types"
 import { useSettingsStore } from "@data/useSettingsStore"
 
 export function SiteSettingsForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
-  const { invalidateCache } = useSettingsStore()
+  const { forceRefresh } = useSettingsStore()
 
   const form = useForm<SiteSettingsFormInput>({
     resolver: zodResolver(siteSettingsFormSchema),
@@ -82,13 +83,25 @@ export function SiteSettingsForm() {
   async function onSubmit(data: SiteSettingsFormInput) {
     setIsLoading(true)
     try {
+      console.log('💾 SiteSettingsForm: Saving settings...', data)
+      
       await updateSiteSettings(data, SITE_SETTING_KEYS)
+      console.log('✅ SiteSettingsForm: Settings saved successfully')
       
-      // Invalidate both server and client caches to get fresh data
-      await invalidateCache()
+      // Force refresh the settings store with fresh data from database
+      console.log('🔄 SiteSettingsForm: Force refreshing settings store...')
+      await forceRefresh()
       
-      // Reload fresh settings after cache invalidation
+      // Explicitly revalidate pages after saving
+      console.log('🔄 SiteSettingsForm: Revalidating pages...')
+      await revalidateSettingsPages()
+      
+      // Reload fresh settings to update the form
+      console.log('🔄 SiteSettingsForm: Getting fresh settings for form...')
       const freshSettings = await getFreshSettings(Object.values(SITE_SETTING_KEYS))
+      
+      console.log('✅ SiteSettingsForm: Fresh settings received:', freshSettings)
+      
       form.reset({
         title: freshSettings[SITE_SETTING_KEYS.SITE_TITLE] || getDefaultSetting(SITE_SETTING_KEYS.SITE_TITLE),
         description: freshSettings[SITE_SETTING_KEYS.SITE_DESCRIPTION] || getDefaultSetting(SITE_SETTING_KEYS.SITE_DESCRIPTION),
@@ -98,9 +111,12 @@ export function SiteSettingsForm() {
         logoId: freshSettings[SITE_SETTING_KEYS.SITE_LOGO] || getDefaultSetting(SITE_SETTING_KEYS.SITE_LOGO),
         faviconId: freshSettings[SITE_SETTING_KEYS.SITE_FAVICON] || getDefaultSetting(SITE_SETTING_KEYS.SITE_FAVICON)
       })
+      
       toast.success("تنظیمات سایت با موفقیت ذخیره شد")
+      console.log('🎉 SiteSettingsForm: Process completed successfully')
+      
     } catch (error) {
-      console.error("خطا در ذخیره تنظیمات:", error)
+      console.error("❌ SiteSettingsForm: خطا در ذخیره تنظیمات:", error)
       toast.error("خطا در ذخیره تنظیمات")
     } finally {
       setIsLoading(false)

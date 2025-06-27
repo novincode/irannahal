@@ -18,7 +18,7 @@ import { useSettingsStore } from "@data/useSettingsStore"
 export function UISettingsForm() {
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
-  const { invalidateCache } = useSettingsStore()
+  const { forceRefresh } = useSettingsStore()
 
   const form = useForm<UISettingsFormInput>({
     resolver: zodResolver(uiSettingsFormSchema),
@@ -63,7 +63,7 @@ export function UISettingsForm() {
       toast.success("تنظیمات رابط کاربری با موفقیت ذخیره شد")
       
       // Invalidate both server and client caches to get fresh data
-      await invalidateCache()
+      await forceRefresh()
       
       // Fetch fresh data after cache invalidation
       const freshSettings = await getFreshSettings(Object.values(UI_SETTING_KEYS))

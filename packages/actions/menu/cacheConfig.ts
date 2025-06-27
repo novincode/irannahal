@@ -1,4 +1,5 @@
 import { commonCaches } from "../cache"
+import { revalidateMenuPages } from "../revalidate"
 
 // Menu-specific cache keys
 export const menuCacheKeys = {
@@ -16,6 +17,7 @@ export const menuCacheInvalidation = {
   // Invalidate all menu caches
   invalidateAll: () => {
     commonCaches.menu.invalidate()
+    // Note: Removed automatic revalidation to prevent excessive calls
   },
 
   // Invalidate specific menu by ID
@@ -52,6 +54,9 @@ export const menuCacheInvalidation = {
     
     // Invalidate all menus list (since order might have changed)
     menuCacheInvalidation.invalidateAllMenusList()
+    
+    // Note: Removed automatic revalidation to prevent excessive calls
+    // Revalidation should be called explicitly when needed
   },
 }
 

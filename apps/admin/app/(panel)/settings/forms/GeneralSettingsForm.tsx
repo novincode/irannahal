@@ -17,7 +17,7 @@ import { useSettingsStore } from "@data/useSettingsStore"
 export default function GeneralSettingsForm() {
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
-  const { invalidateCache } = useSettingsStore()
+  const { forceRefresh } = useSettingsStore()
 
   const form = useForm<GeneralSettingsFormInput>({
     resolver: zodResolver(generalSettingsFormSchema),
@@ -58,7 +58,7 @@ export default function GeneralSettingsForm() {
       toast.success("تنظیمات عمومی با موفقیت ذخیره شد")
       
       // Invalidate both server and client caches to get fresh data
-      await invalidateCache()
+      await forceRefresh()
       
       // Fetch fresh data after cache invalidation
       const freshSettings = await getFreshSettings(Object.values(GENERAL_SETTING_KEYS))

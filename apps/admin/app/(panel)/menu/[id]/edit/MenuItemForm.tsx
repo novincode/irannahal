@@ -26,6 +26,7 @@ import {
 import { X, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { menuCacheOperations, cachedGetLinkableResources } from '@actions/menu'
+import { dispatchGlobalRefresh } from '@data/globalRefresh'
 import { menuItemFormSchema, type MenuItemFormData } from '@actions/menu/formSchema'
 import type { MenuItemWithChildren, GroupedLinkableResources } from '@actions/menu/types'
 import {
@@ -143,6 +144,8 @@ export default function MenuItemForm({
         
         onItemUpdated({ ...editingItem, ...updatedItem, children: editingItem.children })
         toast.success('آیتم منو با موفقیت به‌روزرسانی شد')
+        // Dispatch global refresh to update all menu displays
+        dispatchGlobalRefresh('menu')
       } else {
         const newItem = await menuCacheOperations.createMenuItem({
           ...data,
@@ -151,6 +154,8 @@ export default function MenuItemForm({
         
         onItemCreated({ ...newItem, children: [] })
         toast.success('آیتم منو با موفقیت ایجاد شد')
+        // Dispatch global refresh to update all menu displays
+        dispatchGlobalRefresh('menu')
         form.reset()
       }
     } catch (error) {
@@ -167,6 +172,8 @@ export default function MenuItemForm({
     try {
       await menuCacheOperations.deleteMenuItem(editingItem.id)
       toast.success('آیتم منو با موفقیت حذف شد')
+      // Dispatch global refresh to update all menu displays
+      dispatchGlobalRefresh('menu')
       onItemDeleted(editingItem.id)
       onClose()
     } catch (error) {

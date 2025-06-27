@@ -36,7 +36,7 @@ import { useSettingsStore } from "@data/useSettingsStore"
 export function SEOSettingsForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
-  const { invalidateCache } = useSettingsStore()
+  const { forceRefresh } = useSettingsStore()
 
   const form = useForm<SEOSettingsFormInput>({
     resolver: zodResolver(seoSettingsFormSchema),
@@ -88,8 +88,8 @@ export function SEOSettingsForm() {
       await updateSEOSettings(data, SEO_SETTING_KEYS)
       toast.success("تنظیمات سئو با موفقیت ذخیره شد")
       
-      // Invalidate both server and client caches to get fresh data
-      await invalidateCache()
+      // Force refresh to get the latest data from the server and update UI
+      await forceRefresh()
       
       // Fetch fresh data after cache invalidation
       const freshSettings = await getFreshSettings(Object.values(SEO_SETTING_KEYS))
