@@ -50,10 +50,7 @@ const items = [
     title: "رسانه ها",
     icon: Package,
     url: "media",
-    children: [
-      { title: "لیست رسانه ها", url: "media", icon: Package },
-      { title: "افزودن رسانه", url: "media/new", icon: Package },
-    ],
+  
   },
   {
     title: "سفارش‌ها",
