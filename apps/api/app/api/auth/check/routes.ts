@@ -1,6 +1,7 @@
 // api/app/api/check-auth/route.ts
 import { auth } from "@auth";
 
+export const runtime = 'edge';
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) {
