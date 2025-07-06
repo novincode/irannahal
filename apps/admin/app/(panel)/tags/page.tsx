@@ -4,7 +4,7 @@ import TagsClient from "./TagsClient"
 import type { TagWithDynamicRelations } from "@actions/tags/types"
 
 const page = async () => {
-  const tags: TagWithDynamicRelations<{}>[] = await getTags()
+  const tags: TagWithDynamicRelations[] = await getTags()
   return <TagsClient initialTags={tags} />
 }
 

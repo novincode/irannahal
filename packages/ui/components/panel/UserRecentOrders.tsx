@@ -68,11 +68,6 @@ export function UserRecentOrders({ orders, onViewDetails }: UserRecentOrdersProp
                 <OrderCard
                   key={order.id}
                   order={order}
-                  onViewDetails={onViewDetails}
-                  onTrackOrder={(orderId) => {
-                    // Handle tracking
-                    console.log('Track order:', orderId)
-                  }}
                 />
               ))}
             </div>

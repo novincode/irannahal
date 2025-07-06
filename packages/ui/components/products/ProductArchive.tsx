@@ -3,7 +3,7 @@ import { ProductCard } from "./ProductCard"
 import { ProductListItem } from "./ProductListItem"
 
 interface ProductArchiveProps {
-  products: ProductWithDynamicRelations<{ thumbnail: true }>[]
+  products: ProductWithDynamicRelations<{ thumbnail: true, meta: true }>[]
   viewMode?: 'grid' | 'list'
 }
 

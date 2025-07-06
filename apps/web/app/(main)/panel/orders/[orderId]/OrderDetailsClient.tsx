@@ -63,10 +63,10 @@ export default function OrderDetailsClient({ order: initialOrder, isAdmin = fals
     try {
       await updateOrderStatus({
         orderId: order.id,
-        status: 'delivered' as any, // We'll need to add this status to the type
+        status: 'delivered' as const,
       })
 
-      setOrder(prev => ({ ...prev, status: 'delivered' as any }))
+      setOrder(prev => ({ ...prev, status: 'delivered' as const }))
       toast.success('تحویل سفارش تایید شد')
     } catch (error) {
       console.error('Error confirming delivery:', error)

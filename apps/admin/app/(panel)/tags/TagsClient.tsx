@@ -7,8 +7,8 @@ import { getTags } from "@actions/tags/get"
 import { TagFormInput } from "@actions/tags/formSchema"
 import type { TagWithDynamicRelations } from "@actions/tags/types"
 
-export default function TagsClient({ initialTags }: { initialTags: TagWithDynamicRelations<{}>[] }) {
-  const [tags, setTags] = React.useState<TagWithDynamicRelations<{}>[]>(initialTags)
+export default function TagsClient({ initialTags }: { initialTags: TagWithDynamicRelations[] }) {
+  const [tags, setTags] = React.useState<TagWithDynamicRelations[]>(initialTags)
   const [loading, setLoading] = React.useState(false)
   const formRef = React.useRef<TagFormHandle>(null)
 

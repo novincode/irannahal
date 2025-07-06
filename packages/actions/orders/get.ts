@@ -212,6 +212,11 @@ export async function getOrderStats(userId?: string): Promise<OrderStats> {
       .from(orders)
       .where(and(...conditions, eq(orders.status, 'cancelled')))
 
+    const [deliveredResult] = await db
+      .select({ count: count() })
+      .from(orders)
+      .where(and(...conditions, eq(orders.status, 'delivered')))
+
     // Get total spent (sum of paid orders)
     const [totalSpentResult] = await db
       .select({ total: sum(orders.total) })
@@ -230,6 +235,7 @@ export async function getOrderStats(userId?: string): Promise<OrderStats> {
       paidOrders: paidResult.count || 0,
       shippedOrders: shippedResult.count || 0,
       cancelledOrders: cancelledResult.count || 0,
+      deliveredOrders: deliveredResult.count || 0,
       totalSpent: Number(totalSpentResult.total) || 0,
       averageOrderValue: Number(avgOrderResult.average) || 0,
     }

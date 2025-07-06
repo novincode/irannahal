@@ -11,12 +11,7 @@ export default async function ProductSinglePage({ params }: ProductSinglePagePro
     const { slug } = await params
     
     // Decode the slug to handle Persian/Arabic characters
-    const product = await getProductBySlug(slug, { 
-        with: { 
-            thumbnail: true,
-            meta: true 
-        } 
-    })
+    const product = await getProductBySlug(slug)
     
     if (!product) return notFound()
     

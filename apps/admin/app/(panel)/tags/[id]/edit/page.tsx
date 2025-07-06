@@ -11,7 +11,7 @@ const EditTagPage = async ({ params }: EditTagPageProps) => {
   // Await params first
   const { id } = await params
   
-  const tag: TagWithDynamicRelations<{}> | null = await getTag(id)
+  const tag: TagWithDynamicRelations | null = await getTag(id)
   if (!tag) return <div>برچسب پیدا نشد</div>
   return <EditTagClient initialTag={tag} />
 }

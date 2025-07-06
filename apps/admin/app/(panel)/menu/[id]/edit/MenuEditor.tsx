@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useMemo } from 'react'
+import type { MenuItem } from '@actions/menu/types'
 import {
   DndContext,
   DragOverlay,
@@ -34,7 +35,7 @@ import type { MenuWithItems, MenuItemWithChildren, MenuItemOrderUpdate } from '@
 import MenuItemForm from './MenuItemForm'
 import SortableMenuItem from './SortableMenuItem'
 import DroppableContainer from './DroppableContainer'
-import { flattenMenuItems, buildHierarchy, canMoveToParent } from './menuUtils'
+import { flattenMenuItems, buildHierarchy, canMoveToParent, type FlatMenuItemWithPath } from './menuUtils'
 
 // Root Drop Zone Component for easier dropping into root
 function RootDropZone({ 
@@ -134,7 +135,7 @@ function DragFeedback({
     insertPosition?: 'before' | 'after'
     actionHint?: string
   } | null
-  activeItem: any
+  activeItem: FlatMenuItemWithPath | null
 }) {
   if (!dragOverInfo || !activeItem) return null
 
@@ -522,7 +523,7 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
     } finally {
       setIsSaving(false)
     }
-  }, [items])
+  }, [items, router])
 
   const handleItemCreated = useCallback((newItem: MenuItemWithChildren) => {
     setItems(prevItems => buildHierarchy([...flattenMenuItems(prevItems), newItem]))
@@ -694,7 +695,7 @@ export default function MenuEditor({ menu }: MenuEditorProps) {
       </Drawer>
 
       {/* Drag Feedback Indicator */}
-      <DragFeedback dragOverInfo={dragOverInfo} activeItem={activeItem} />
+      <DragFeedback dragOverInfo={dragOverInfo} activeItem={activeItem || null} />
     </div>
   )
 }

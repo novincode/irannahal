@@ -22,7 +22,7 @@ import {
   MdAccountBalance
 } from 'react-icons/md'
 import { formatPrice } from '@ui/lib/utils'
-import type { OrderWithDynamicRelations } from '@actions/orders/types'
+import type { OrderWithDynamicRelations, OrderItemWithDynamicRelations } from '@actions/orders/types'
 
 type PaymentStatus = 'selecting' | 'processing' | 'success' | 'failed'
 
@@ -220,7 +220,7 @@ export default function PaymentClient({ order, selectedGateway }: PaymentClientP
               <div className="bg-muted/30 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>تعداد کالاها:</span>
-                  <span>{order.items ? (order.items as any[]).length : 0} محصول</span>
+                  <span>{order.items ? (order.items as OrderItemWithDynamicRelations[]).length : 0} محصول</span>
                 </div>
                 {order.discountAmount && order.discountAmount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">

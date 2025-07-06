@@ -13,7 +13,7 @@ import "swiper/css/grid"
 import { ProductCard } from "./ProductCard"
 
 interface ProductsListProps {
-  products: ProductWithDynamicRelations<{ thumbnail: true, meta?: true }>[]
+  products: ProductWithDynamicRelations<{ thumbnail: true, meta: true }>[]
   title?: string
   slidesPerView?: number | { base: number, sm: number, md: number, lg: number, xl: number }
   grid?: boolean

@@ -15,6 +15,15 @@
             "persistent": true
         },
         "lint": {},
-        "typecheck": {}
+        "typecheck": {},
+        "deploy": {
+            "dependsOn": [
+                "build"
+            ],
+            "cache": false
+        },
+        "env:push": {
+            "cache": false
+        }
     }
 }

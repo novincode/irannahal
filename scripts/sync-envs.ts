@@ -21,13 +21,8 @@ function parseEnvFile(filePath: string): Record<string, string> {
 
 // Merge root envs into a target env file
 function syncEnvFile(targetPath: string, rootEnvs: Record<string, string>) {
-  const targetEnvs = parseEnvFile(targetPath);
-  // Overwrite all root keys in target with root values
-  for (const key of Object.keys(rootEnvs)) {
-    targetEnvs[key] = rootEnvs[key];
-  }
-  // Keep any extra keys in target that are not in root
-  const content = Object.entries(targetEnvs)
+  // Don't merge with existing target file - replace it completely with root content
+  const content = Object.entries(rootEnvs)
     .map(([key, value]) => `${key}=${value}`)
     .join("\n");
 

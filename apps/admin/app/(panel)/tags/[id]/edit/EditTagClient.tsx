@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import type { TagWithDynamicRelations } from "@actions/tags/types"
 import { TagFormInput } from "@actions/tags/formSchema"
 
-export default function EditTagClient({ initialTag }: { initialTag: TagWithDynamicRelations<{}> }) {
+export default function EditTagClient({ initialTag }: { initialTag: TagWithDynamicRelations }) {
   const [loading, setLoading] = React.useState(false)
   const formRef = React.useRef<TagFormHandle>(null)
   const router = useRouter()
