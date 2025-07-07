@@ -10,7 +10,7 @@ interface AdminBarDropdownProps {
     admin_url?: string;
 }
 
-const AdminBarDropdown = ({ admin_url = "/admin" }: AdminBarDropdownProps) => {
+const AdminBarDropdown = ({ admin_url = "" }: AdminBarDropdownProps) => {
     // Only call useSession if sessionProp is not provided
     const { data: session } = useSession()
 

@@ -71,7 +71,7 @@ export function NewProductPage({
       
       await createProduct(productData)
       toast.success("محصول با موفقیت ایجاد شد")
-      router.push("/admin/products")
+      router.push("/products")
     } catch (error) {
       console.error("Failed to create product:", error)
       toast.error("خطا در ایجاد محصول")

@@ -48,7 +48,7 @@ const MainFooter = () => {
         </div>
       </div>
       <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        <span>© 2025</span> &nbsp;|&nbsp; ساخته شده با <span className="text-pink-500">♥</span> در نهالتو
+        <span>© 2025</span> &nbsp;|&nbsp; ساخته شده با <span className="text-pink-500">♥</span> توسط نکس کد
       </div>
     </footer>
   )
