@@ -1,31 +1,35 @@
 'use client'
-
 import { useEffect, useState } from 'react'
+import { getOrders } from "@actions/orders/get"
 import { Card } from "@shadcn/card"
 import { Button } from "@shadcn/button"
 import { formatPrice } from "@ui/lib/utils"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+ Table,
+ TableBody,
+ TableCell,
+ TableHead,
+ TableHeader,
+ TableRow,
 } from "@shadcn/table"
 import { Badge } from "@shadcn/badge"
+import { orderStatusEnum } from "@db/schema"
+
+interface OrderItem {
+  id: string
+  quantity: number
+  price: number
+  product: {
+    name: string
+  }
+}
 
 interface Order {
   id: string
-  createdAt: string
-  status: string
+  createdAt: Date | null
+  status: typeof orderStatusEnum.enumValues[number]
   total: number
-  items: {
-    product: {
-      name: string
-    }
-    quantity: number
-    price: number
-  }[]
+  items: OrderItem[]
 }
 
 interface UserOrdersProps {
@@ -55,16 +59,14 @@ export function UserOrders({ userId }: UserOrdersProps) {
   useEffect(() => {
     async function fetchOrders() {
       try {
-        const response = await fetch(`/api/users/${userId}/orders`)
-        const data = await response.json()
-        setOrders(data)
+        const data = await getOrders({ userId }, { items: { product: true } })
+        setOrders(data as unknown as Order[])
       } catch (error) {
         console.error('Error fetching user orders:', error)
       } finally {
         setIsLoading(false)
       }
     }
-
     fetchOrders()
   }, [userId])
 
@@ -93,7 +95,7 @@ export function UserOrders({ userId }: UserOrdersProps) {
             <TableRow key={order.id}>
               <TableCell>{order.id}</TableCell>
               <TableCell>
-                {new Date(order.createdAt).toLocaleDateString('fa-IR')}
+                {order.createdAt?.toLocaleDateString('fa-IR')}
               </TableCell>
               <TableCell>
                 <Badge variant={statusColors[order.status] as any}>
@@ -102,9 +104,9 @@ export function UserOrders({ userId }: UserOrdersProps) {
               </TableCell>
               <TableCell>
                 <ul className="list-disc list-inside">
-                  {order.items.map((item, index) => (
+                  {order.items?.map((item, index) => (
                     <li key={index} className="text-sm">
-                      {item.product.name} × {item.quantity}
+                      {item.product?.name} × {item.quantity}
                     </li>
                   ))}
                 </ul>

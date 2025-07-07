@@ -42,7 +42,7 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
     )
   }
   
-  if (role) {
+  if (role && role !== 'all') {
     where.push(eq(users.role, role as typeof userRoleEnum.enumValues[number]))
   }
   
@@ -66,6 +66,16 @@ export async function getUsers(params: GetUsersParams = {}): Promise<GetUsersRes
     orderBy: [desc(users.emailVerified)],
     limit: pageSize,
     offset,
+    columns: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      image: true,
+      role: true,
+      deletedAt: true,
+      emailVerified: true,
+    },
   })
 
   return {

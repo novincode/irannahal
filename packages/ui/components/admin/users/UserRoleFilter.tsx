@@ -21,14 +21,14 @@ const roleLabels: Record<string, string> = {
   customer: "مشتری",
 }
 
-export function UserRoleFilter({ value, onChange }: UserRoleFilterProps) {
+export function UserRoleFilter({ value = "all", onChange }: UserRoleFilterProps) {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="w-[180px]">
         <SelectValue placeholder="همه نقش‌ها" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">همه نقش‌ها</SelectItem>
+        <SelectItem value="all">همه نقش‌ها</SelectItem>
         {userRoleEnum.enumValues.map((role) => (
           <SelectItem key={role} value={role}>
             {roleLabels[role]}

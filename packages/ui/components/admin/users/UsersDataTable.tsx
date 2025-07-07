@@ -99,7 +99,7 @@ const columns: ColumnDef<User>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem 
-              onClick={() => router.push(`/panel/users/${row.original.id}/edit`)}
+              onClick={() => router.push(`/users/${row.original.id}/edit`)}
             >
               ویرایش
             </DropdownMenuItem>
