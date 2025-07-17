@@ -4,9 +4,12 @@ import { Button } from "@shadcn/button"
 import { Card } from "@shadcn/card"
 import { Separator } from "@shadcn/separator"
 import { Badge } from "@shadcn/badge"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@shadcn/dialog"
+import { Label } from "@shadcn/label"
+import { Input } from "@shadcn/input"
 import { MinusIcon, PlusIcon, ShoppingCartIcon } from "lucide-react"
 import Image from "next/image"
-import { useState, Fragment } from "react"
+import { useState, Fragment, useEffect } from "react"
 import { useCartStore } from "@data/useCartStore"
 import { calculateDiscountedPrice, getDiscountPreviewText, extractProductMeta, parseDiscountConditions, parseInfoTable, parseDimensions } from "@actions/products/utils"
 
@@ -15,18 +18,18 @@ interface ProductSingleProps {
 }
 
 export function ProductSingle({ product }: ProductSingleProps) {
-  const [quantity, setQuantity] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
   const thumbnailUrl = product.thumbnail?.url || "/placeholder.png"
   
   // Cart store hooks
   const addItem = useCartStore((state) => state.addItem)
+  const updateQuantity = useCartStore((state) => state.updateQuantity)
+  const removeItem = useCartStore((state) => state.removeItem)
   const openDrawer = useCartStore((state) => state.openDrawer)
   const items = useCartStore((state) => state.items)
+  const [isLoading, setIsLoading] = useState(false)
   
   // Check if product is already in cart
   const existingItem = items.find(item => item.product.id === product.id)
-  const totalQuantityInCart = existingItem?.quantity || 0
   
   // Process meta data using utility functions
   const meta = extractProductMeta(product)
@@ -35,30 +38,46 @@ export function ProductSingle({ product }: ProductSingleProps) {
   const discountConditions = parseDiscountConditions(meta)
   
   // Calculate price with quantity-based discounts
-  const originalPrice = meta.originalPrice ? Number(meta.originalPrice) : null;
-  const discountResult = calculateDiscountedPrice(product.price, quantity, discountConditions);
-  const discountPreview = getDiscountPreviewText(product.price, quantity, discountConditions);
+  const originalPrice = meta.originalPrice ? Number(meta.originalPrice) : null
+  const quantity = existingItem?.quantity || 0
+  const discountResult = calculateDiscountedPrice(product.price, quantity || 1, discountConditions)
+  const discountPreview = getDiscountPreviewText(product.price, quantity || 1, discountConditions)
   
-  const incrementQuantity = () => setQuantity(prev => prev + 1)
-  const decrementQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1)
+  const handleQuantityChange = async (newQuantity: number) => {
+    setIsLoading(true)
+    try {
+      if (newQuantity === 0) {
+        await removeItem(product.id)
+      } else if (existingItem) {
+        updateQuantity(product.id, newQuantity)
+      } else {
+        await addItem({ 
+          product,
+          quantity: newQuantity
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update cart:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
   
+  const incrementQuantity = () => handleQuantityChange(quantity + 1)
+  const decrementQuantity = () => handleQuantityChange(quantity - 1)
+  
+
+
   const handleAddToCart = async () => {
     setIsLoading(true)
     try {
-      addItem({ 
-        product, 
-        quantity
-        // Don't pass price - let cart store calculate discounts
+      await addItem({ 
+        product,
+        quantity: 1
       })
-      
-      // Small delay for user feedback, then open drawer
-      setTimeout(() => {
-        openDrawer()
-        setIsLoading(false)
-        // Reset quantity to 1 after adding
-        setQuantity(1)
-      }, 300)
     } catch (error) {
+      console.error('Failed to add to cart:', error)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -66,7 +85,7 @@ export function ProductSingle({ product }: ProductSingleProps) {
   return (
     <div className="container mx-auto py-8">
       {/* Product Header - Main Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 md:gap-6 mb-8">
         {/* Right Column - Thumbnail */}
         <div className="order-2 md:order-1">
           <Card className="overflow-hidden">
@@ -93,119 +112,148 @@ export function ProductSingle({ product }: ProductSingleProps) {
           
           <Separator className="my-4" />
           
-          {/* Price Section */}
-          <div className="mb-6">
-            {originalPrice && originalPrice > product.price && (
-              <div className="text-lg text-muted-foreground line-through mb-1">
-                قیمت اصلی: {originalPrice.toLocaleString()} تومان
-              </div>
-            )}
-            
-            {/* Show current price per unit */}
-            <div className="text-sm text-muted-foreground mb-1">
-              قیمت واحد: {product.price.toLocaleString()} تومان
-            </div>
-            
-            <div className="flex items-center gap-3 mb-2">
-              <div className="text-2xl font-semibold">
-                مجموع: {discountResult.finalPrice.toLocaleString()} تومان
-              </div>
+          {/* Price & Cart Section */}
+          <div className="mb-6 space-y-4">
+            {/* Prices */}
+            <div className="space-y-2">
+              {originalPrice && originalPrice > product.price && (
+                <div className="text-muted-foreground text-sm line-through">
+                  قیمت اصلی: {originalPrice.toLocaleString()} تومان
+                </div>
+              )}
               
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="text-xl font-medium">
+                  قیمت هر واحد: {discountResult.appliedDiscount 
+                    ? Math.round(discountResult.finalPrice / quantity).toLocaleString()
+                    : product.price.toLocaleString()
+                  } تومان
+                </div>
+                {meta.customBadge && (
+                  <Badge variant="secondary">
+                    {meta.customBadge}
+                  </Badge>
+                )}
+              </div>
+
               {discountResult.hasDiscount && (
-                <Badge variant="destructive" className="text-sm">
-                  {discountResult.appliedDiscount?.type === "percentage" 
-                    ? `${discountResult.appliedDiscount.value}% تخفیف`
-                    : `${discountResult.totalDiscount.toLocaleString()} تومان تخفیف`
-                  }
-                </Badge>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <Badge variant="destructive">
+                    {discountResult.appliedDiscount?.type === "percentage" 
+                      ? `${discountResult.appliedDiscount.value}% تخفیف`
+                      : `${discountResult.totalDiscount.toLocaleString()} تومان تخفیف`
+                    }
+                  </Badge>
+                  <span className="text-sm text-green-600 font-medium">
+                    شما در هر واحد {Math.round(discountResult.totalDiscount / quantity).toLocaleString()} تومان صرفه‌جویی می‌کنید!
+                  </span>
+                </div>
+              )}
+
+              {discountPreview && (
+                <div className="text-sm text-green-600">
+                  {discountPreview}
+                </div>
               )}
             </div>
-            
-            {discountResult.hasDiscount && (
-              <div className="text-sm text-green-600 font-medium">
-                شما {discountResult.totalDiscount.toLocaleString()} تومان صرفه‌جویی می‌کنید!
+
+            {product.description && (
+              <div className="text-muted-foreground">
+                {product.description}
               </div>
             )}
-            
-            {discountPreview && (
-              <div className="text-sm text-green-600 mb-2">
-                {discountPreview}
-              </div>
-            )}
-            
-            {/* Show next discount tier if available */}
-            {discountConditions.length > 0 && (
-              <div className="text-xs text-muted-foreground">
-                {(() => {
-                  const nextTier = discountConditions
-                    .filter((d: any) => d.minQuantity > quantity)
-                    .sort((a: any, b: any) => a.minQuantity - b.minQuantity)[0];
+
+            {/* Quantity Controls or Add to Cart */}
+            {quantity > 0 ? (
+              <div className="flex flex-col w-full gap-3">
+                <div className="flex items-center justify-between w-full border-2 rounded-lg px-2">
+                  <Button 
+                    variant="ghost" 
+                    size="lg"
+                    className="h-16 w-16" 
+                    disabled={isLoading}
+                    onClick={decrementQuantity}
+                  >
+                    <MinusIcon className="h-8 w-8" />
+                  </Button>
                   
-                  if (nextTier) {
-                    return `با خرید ${nextTier.minQuantity} عدد، ${
-                      nextTier.type === "percentage" 
-                        ? `${nextTier.value}% تخفیف` 
-                        : `${nextTier.value.toLocaleString()} تومان تخفیف`
-                    } دریافت کنید`;
-                  }
-                  return null;
-                })()}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button 
+                        className="w-24 text-center text-xl font-semibold py-4 hover:bg-muted/50 transition-colors"
+                        disabled={isLoading}
+                      >
+                        {quantity}
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>تغییر تعداد</DialogTitle>
+                        <DialogDescription>
+                          تعداد مورد نظر خود را وارد کنید
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="quantity" className="text-right col-span-4">
+                            تعداد
+                          </Label>
+                          <Input
+                            id="quantity"
+                            type="number"
+                            value={quantity}
+                            className="col-span-4 text-center text-lg"
+                            min={1}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const val = parseInt(e.target.value)
+                              if (!isNaN(val) && val >= 0) {
+                                handleQuantityChange(val)
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="lg"
+                    className="h-16 w-16" 
+                    disabled={isLoading}
+                    onClick={incrementQuantity}
+                  >
+                    <PlusIcon className="h-8 w-8" />
+                  </Button>
+                </div>
+                
+                {isLoading && (
+                  <span className="text-sm text-muted-foreground animate-pulse text-center">
+                    در حال بروزرسانی...
+                  </span>
+                )}
+              </div>
+            ) : (
+              <Button 
+                size="lg"
+                className="w-full gap-3 h-14 text-lg font-medium" 
+                onClick={handleAddToCart}
+                disabled={isLoading}
+              >
+                <ShoppingCartIcon className="h-6 w-6" />
+                {isLoading ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
+              </Button>
+            )}
+
+            {/* Total Price */}
+            {quantity > 0 && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 border-t">
+                <div className="text-2xl font-semibold">
+                  مجموع: {discountResult.finalPrice.toLocaleString()} تومان
+                </div>
               </div>
             )}
           </div>
-          
-          {meta.customBadge && (
-            <Badge variant="secondary" className="mb-4">
-              {meta.customBadge}
-            </Badge>
-          )}
-          
-          {product.description && (
-            <div className="text-muted-foreground mb-6">
-              {product.description}
-            </div>
-          )}
-          
-          {/* Quantity Selector */}
-          <div className="flex items-center gap-4 mb-6">
-            <span className="text-muted-foreground">تعداد:</span>
-            <div className="flex items-center border rounded-md">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={decrementQuantity}
-                disabled={quantity <= 1}
-              >
-                <MinusIcon className="h-4 w-4" />
-              </Button>
-              <span className="w-12 text-center">{quantity}</span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={incrementQuantity}
-              >
-                <PlusIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Add to Cart Button */}
-          <Button 
-            size="lg" 
-            className="gap-2" 
-            onClick={handleAddToCart}
-            disabled={isLoading}
-          >
-            <ShoppingCartIcon className="h-5 w-5" />
-            {isLoading ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
-          </Button>
-          
-          {/* Show if already in cart */}
-          {totalQuantityInCart > 0 && (
-            <div className="text-sm text-muted-foreground">
-              در حال حاضر {totalQuantityInCart} عدد از این محصول در سبد خرید شما موجود است
-            </div>
-          )}
         </div>
       </div>
       

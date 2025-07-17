@@ -16,7 +16,7 @@ const page = async () => {
   })
   return (
     <div className='container'>
-      <div className='grid grid-cols-1 md:grid-cols-3 p-4 gap-4'>
+      <div className='flex flex-col md:grid grid-cols-1 md:grid-cols-3 gap-4 my-4'>
         <div className="col-span-2">
           <HeroSlider />
         </div>

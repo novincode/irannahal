@@ -1,9 +1,9 @@
 'use client'
-
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@shadcn/card"
 import { formatPrice } from "@ui/lib/utils"
 import { UserStatsCard } from '@ui/components/panel/UserStatsCard'
+import { getOrderStats } from '@actions/orders/get'
 
 interface UserStats {
   totalOrders: number
@@ -11,6 +11,9 @@ interface UserStats {
   pendingOrders: number
   shippedOrders: number
   averageOrderValue: number
+  paidOrders: number
+  cancelledOrders: number
+  deliveredOrders: number
 }
 
 interface UserStatsProps {
@@ -24,17 +27,16 @@ export function UserStats({ userId }: UserStatsProps) {
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Fetch user stats here
-        const response = await fetch(`/api/users/${userId}/stats`)
-        const data = await response.json()
+        // Use the server action directly
+        const data = await getOrderStats(userId)
         setStats(data)
       } catch (error) {
         console.error('Error fetching user stats:', error)
+        setStats(null)
       } finally {
         setIsLoading(false)
       }
     }
-
     fetchStats()
   }, [userId])
 
@@ -54,21 +56,18 @@ export function UserStats({ userId }: UserStatsProps) {
         icon="ShoppingBag"
         description="از ابتدای عضویت"
       />
-      
       <UserStatsCard
         title="سفارش‌های در انتظار"
         value={stats.pendingOrders}
         icon="Clock"
         description="نیاز به پرداخت"
       />
-      
       <UserStatsCard
         title="سفارش‌های ارسال شده"
         value={stats.shippedOrders}
         icon="Package"
         description="تحویل موفق"
       />
-      
       <UserStatsCard
         title="مجموع خرید"
         value={stats.totalSpent}
@@ -76,7 +75,6 @@ export function UserStats({ userId }: UserStatsProps) {
         isRevenue
         description="کل مبلغ خریدها"
       />
-
       {stats.averageOrderValue > 0 && (
         <UserStatsCard
           title="میانگین ارزش سفارش"

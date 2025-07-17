@@ -61,7 +61,7 @@ const MainHeader = () => {
         <div className="container">
           <div className='flex justify-between items-center gap-2'>
             <Logo />
-            <div className='max-w-[500px] flex-1'>
+            <div className='max-w-[500px] flex-1 hidden md:block'>
               <CommandSearch />
             </div>
             <div className=' flex items-center gap-2'>
